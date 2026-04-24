@@ -6,7 +6,7 @@ import uuid
 import html
 import os
 from pathlib import Path
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, Defaults, ConversationHandler, MessageHandler, filters
 BOT_TOKEN = '8210062279:AAEaZinIXK50BhuR5vYqBaKYaQhP_Lyb7As'
@@ -501,34 +501,36 @@ def set_withdrawal(wid: int, status: str, admin_id: int) -> bool:
     return True
 
 def main_menu(admin=False, group=False):
-    # Старое inline-меню оставлено для совместимости со старыми сообщениями.
-    buttons = [[InlineKeyboardButton('Кто я', callback_data='whoami')]]
+    # Inline-меню. В группах используется оно, чтобы не было нижней клавиатуры.
+    buttons = [[InlineKeyboardButton('🎭 Кто я', callback_data='whoami')]]
+
     if not group:
-        buttons.append([InlineKeyboardButton('Профиль', callback_data='profile'), InlineKeyboardButton('Вывод USDT', callback_data='withdraw')])
-        buttons.append([InlineKeyboardButton('Поиск по ID', callback_data='search_user')])
-    buttons.append([InlineKeyboardButton('Казино', callback_data='casino')])
-    buttons.append([InlineKeyboardButton('Топ 3', callback_data='top3')])
+        buttons.append([InlineKeyboardButton('👤 Профиль', callback_data='profile'), InlineKeyboardButton('💸 Вывод USDT', callback_data='withdraw')])
+        buttons.append([InlineKeyboardButton('🔎 Поиск по ID', callback_data='search_user')])
+
+    buttons.append([InlineKeyboardButton('🎰 Казино', callback_data='casino')])
+    buttons.append([InlineKeyboardButton('🏆 Топ 3', callback_data='top3')])
+
     if admin:
-        buttons.append([InlineKeyboardButton('Админ-меню', callback_data='admin_menu')])
+        buttons.append([InlineKeyboardButton('⚙️ Админ-меню', callback_data='admin_menu')])
+
     return InlineKeyboardMarkup(buttons)
 
-
 def reply_main_menu(admin=False, group=False):
+    # Нижняя клавиатура используется только в ЛС.
+    # В группах меню показывается inline-кнопками под сообщением.
     if group:
-        rows = [
-            ['Кто я'],
-            ['Казино', 'Топ 3'],
-        ]
+        rows = []
     else:
         rows = [
-            ['Кто я'],
-            ['Профиль', 'Вывод USDT'],
-            ['Поиск по ID', 'Казино'],
-            ['Топ 3'],
+            ['🎭 Кто я'],
+            ['👤 Профиль', '💸 Вывод USDT'],
+            ['🔎 Поиск по ID', '🎰 Казино'],
+            ['🏆 Топ 3'],
         ]
 
     if admin:
-        rows.append(['Админ-меню'])
+        rows.append(['⚙️ Админ-меню'])
 
     return ReplyKeyboardMarkup(
         rows,
@@ -541,18 +543,17 @@ def role_menu(group=False):
     buttons = []
 
     if not group:
-        buttons.append([InlineKeyboardButton('Профиль', callback_data='profile'), InlineKeyboardButton('Вывод USDT', callback_data='withdraw')])
-        buttons.append([InlineKeyboardButton('Поиск по ID', callback_data='search_user')])
-        buttons.append([InlineKeyboardButton('Казино', callback_data='casino')])
+        buttons.append([InlineKeyboardButton('👤 Профиль', callback_data='profile'), InlineKeyboardButton('💸 Вывод USDT', callback_data='withdraw')])
+        buttons.append([InlineKeyboardButton('🔎 Поиск по ID', callback_data='search_user')])
+        buttons.append([InlineKeyboardButton('🎰 Казино', callback_data='casino')])
 
     return InlineKeyboardMarkup(buttons) if buttons else None
 
-
 def admin_menu():
-    return InlineKeyboardMarkup([[InlineKeyboardButton('Добавить фразу', callback_data='add_phrase')], [InlineKeyboardButton('Удалить фразу', callback_data='delete_phrase_btn')], [InlineKeyboardButton('Последние фразы', callback_data='last_phrases')], [InlineKeyboardButton('Количество фраз', callback_data='phrase_count')], [InlineKeyboardButton('Уведомление в бот', callback_data='broadcast')], [InlineKeyboardButton('Статистика', callback_data='admin_stats')], [InlineKeyboardButton('Выдать USDT', callback_data='give_usdt')], [InlineKeyboardButton('Забрать USDT', callback_data='take_usdt')], [InlineKeyboardButton('Выдать кастом UID', callback_data='custom_uid')], [InlineKeyboardButton('Скрыть пользователя', callback_data='hide_user')], [InlineKeyboardButton('Раскрыть пользователя', callback_data='unhide_user')], [InlineKeyboardButton('Группы с ботом', callback_data='groups')], [InlineKeyboardButton('Назад', callback_data='back')]])
+    return InlineKeyboardMarkup([[InlineKeyboardButton('➕ Добавить фразу', callback_data='add_phrase')], [InlineKeyboardButton('🗑 Удалить фразу', callback_data='delete_phrase_btn')], [InlineKeyboardButton('📋 Последние фразы', callback_data='last_phrases')], [InlineKeyboardButton('🔢 Количество фраз', callback_data='phrase_count')], [InlineKeyboardButton('📣 Уведомление в бот', callback_data='broadcast')], [InlineKeyboardButton('📊 Статистика', callback_data='admin_stats')], [InlineKeyboardButton('💰 Выдать USDT', callback_data='give_usdt')], [InlineKeyboardButton('➖ Забрать USDT', callback_data='take_usdt')], [InlineKeyboardButton('🆔 Выдать кастом UID', callback_data='custom_uid')], [InlineKeyboardButton('🙈 Скрыть пользователя', callback_data='hide_user')], [InlineKeyboardButton('👁 Раскрыть пользователя', callback_data='unhide_user')], [InlineKeyboardButton('👥 Группы с ботом', callback_data='groups')], [InlineKeyboardButton('⬅️ Назад', callback_data='back')]])
 
 def withdraw_admin_menu(wid: int):
-    return InlineKeyboardMarkup([[InlineKeyboardButton('Одобрить', callback_data=f'wd_ok:{wid}'), InlineKeyboardButton('Отклонить', callback_data=f'wd_no:{wid}')]])
+    return InlineKeyboardMarkup([[InlineKeyboardButton('✅ Одобрить', callback_data=f'wd_ok:{wid}'), InlineKeyboardButton('❌ Отклонить', callback_data=f'wd_no:{wid}')]])
 
 async def delete_last_private(context: ContextTypes.DEFAULT_TYPE, chat_id: int):
     mid = context.user_data.get('last_private_result')
@@ -639,20 +640,20 @@ async def send_long_message(bot, chat_id: int, text: str, reply_markup=None):
 
 def casino_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton('Слоты 0.1 USDT', callback_data='slots_bet:0.1')],
-        [InlineKeyboardButton('Слоты 0.5 USDT', callback_data='slots_bet:0.5')],
-        [InlineKeyboardButton('Слоты 1 USDT', callback_data='slots_bet:1')],
-        [InlineKeyboardButton('Слоты 5 USDT', callback_data='slots_bet:5')],
+        [InlineKeyboardButton('🎰 Слоты 0.1 USDT', callback_data='slots_bet:0.1')],
+        [InlineKeyboardButton('🎰 Слоты 0.5 USDT', callback_data='slots_bet:0.5')],
+        [InlineKeyboardButton('🎰 Слоты 1 USDT', callback_data='slots_bet:1')],
+        [InlineKeyboardButton('🎰 Слоты 5 USDT', callback_data='slots_bet:5')],
     ])
 
 
 def slots_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton('Еще раз 0.1', callback_data='slots_bet:0.1')],
-        [InlineKeyboardButton('Еще раз 0.5', callback_data='slots_bet:0.5')],
-        [InlineKeyboardButton('Еще раз 1', callback_data='slots_bet:1')],
-        [InlineKeyboardButton('Еще раз 5', callback_data='slots_bet:5')],
-        [InlineKeyboardButton('Казино', callback_data='casino')],
+        [InlineKeyboardButton('🔄 Еще раз 0.1', callback_data='slots_bet:0.1')],
+        [InlineKeyboardButton('🔄 Еще раз 0.5', callback_data='slots_bet:0.5')],
+        [InlineKeyboardButton('🔄 Еще раз 1', callback_data='slots_bet:1')],
+        [InlineKeyboardButton('🔄 Еще раз 5', callback_data='slots_bet:5')],
+        [InlineKeyboardButton('🎰 Казино', callback_data='casino')],
     ])
 
 
@@ -823,9 +824,9 @@ async def send_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_result(
         update,
         context,
-        f'🎭 {mention(user)}, {html.escape(phrase)}\n'
-        f'⭐ Редкость: {html.escape(rarity_label)}\n'
-        f'💰 Добавлено: +{money(reward_milli)}',
+        f'{mention(user)} — <b>{html.escape(phrase)}</b>\n'
+        f'⭐ Редкость: <b>{html.escape(rarity_label)}</b>\n'
+        f'💰 Добавлено: <b>+{money(reward_milli)}</b>',
         reply_markup=role_menu(group=is_group(chat))
     )
 
@@ -833,20 +834,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_user(update.effective_user)
     remember_group(update.effective_chat)
 
+    if is_group(update.effective_chat):
+        await update.message.reply_text(
+            pe('🎭 Бот для игры «Кто я?»'),
+            parse_mode='HTML',
+            reply_markup=ReplyKeyboardRemove()
+        )
+
+        await update.message.reply_text(
+            pe('Главное меню:'),
+            parse_mode='HTML',
+            reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
+        )
+        return
+
     await update.message.reply_text(
         pe('🎭 Бот для игры «Кто я?»\n\nГлавное меню открыто снизу.'),
         parse_mode='HTML',
-        reply_markup=reply_main_menu(is_admin(update.effective_user.id), is_group(update.effective_chat))
+        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
     )
 
 async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_user(update.effective_user)
     remember_group(update.effective_chat)
 
+    if is_group(update.effective_chat):
+        await update.message.reply_text(
+            pe('Главное меню:'),
+            parse_mode='HTML',
+            reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
+        )
+        return
+
     await update.message.reply_text(
         pe('Главное меню открыто снизу.'),
         parse_mode='HTML',
-        reply_markup=reply_main_menu(is_admin(update.effective_user.id), is_group(update.effective_chat))
+        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
     )
 
 
@@ -863,11 +886,11 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     raw_text = update.message.text.strip()
     lower_text = raw_text.lower()
 
-    if lower_text in TRIGGERS or lower_text == 'кто я?':
+    if lower_text in TRIGGERS or lower_text in ('кто я?', '🎭 кто я'):
         await send_role(update, context)
         return
 
-    if lower_text == 'профиль':
+    if lower_text in ('профиль', '👤 профиль'):
         if update.effective_chat.type != 'private':
             await update.message.reply_text(pe('Профиль доступен только в личке с ботом.'), parse_mode='HTML')
             return
@@ -875,15 +898,15 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_result(update, context, profile_text(update.effective_user.id))
         return
 
-    if lower_text == 'топ 3':
+    if lower_text in ('топ 3', '🏆 топ 3'):
         await send_clean_group_result(update, context, top_text())
         return
 
-    if lower_text == 'казино':
+    if lower_text in ('казино', '🎰 казино'):
         await show_casino(update, context)
         return
 
-    if lower_text == 'админ-меню':
+    if lower_text in ('админ-меню', '⚙️ админ-меню', '⚙ админ-меню'):
         if not is_admin(update.effective_user.id):
             await update.message.reply_text(pe('⛔ У тебя нет доступа.'), parse_mode='HTML')
             return
@@ -891,12 +914,19 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(pe('⚙️ Админ-меню:'), parse_mode='HTML', reply_markup=admin_menu())
         return
 
-    if lower_text == 'меню':
-        await update.message.reply_text(
-            pe('Главное меню открыто снизу.'),
-            parse_mode='HTML',
-            reply_markup=reply_main_menu(is_admin(update.effective_user.id), is_group(update.effective_chat))
-        )
+    if lower_text in ('меню', '🏠 меню'):
+        if is_group(update.effective_chat):
+            await update.message.reply_text(
+                pe('Главное меню:'),
+                parse_mode='HTML',
+                reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
+            )
+        else:
+            await update.message.reply_text(
+                pe('Главное меню открыто снизу.'),
+                parse_mode='HTML',
+                reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
+            )
         return
 
 async def admin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1444,11 +1474,18 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await q.message.reply_text(pe('⛔ У тебя нет доступа.'), parse_mode='HTML')
     elif data == 'back':
-        await q.message.reply_text(
-            pe('Главное меню открыто снизу.'),
-            parse_mode='HTML',
-            reply_markup=reply_main_menu(is_admin(q.from_user.id), is_group(q.message.chat))
-        )
+        if is_group(q.message.chat):
+            await q.message.reply_text(
+                pe('Главное меню:'),
+                parse_mode='HTML',
+                reply_markup=main_menu(is_admin(q.from_user.id), group=True)
+            )
+        else:
+            await q.message.reply_text(
+                pe('Главное меню открыто снизу.'),
+                parse_mode='HTML',
+                reply_markup=reply_main_menu(is_admin(q.from_user.id), group=False)
+            )
     elif data == 'last_phrases':
         rows = last_phrases(10)
         text = 'Фраз пока нет.' if not rows else '📋 Последние фразы:\n\n' + '\n'.join((f'{pid}. [{RARITY_LABELS.get(rarity, rarity)}] {html.escape(txt)}' for pid, txt, rarity in rows))
@@ -1481,13 +1518,13 @@ def main():
     app.add_handler(CommandHandler('dbpath', dbpath_cmd))
     app.add_handler(CommandHandler('adminstats', admin_stats_cmd))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(add_phrase_start, pattern='^add_phrase$')], states={WAIT_PHRASE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_phrase)]}, fallbacks=[CommandHandler('cancel', cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(withdraw_start, pattern='^withdraw$'), MessageHandler(filters.Regex('^Вывод USDT$'), withdraw_start_text)], states={WAIT_WALLET: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_wallet)], WAIT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount)]}, fallbacks=[CommandHandler('cancel', cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(withdraw_start, pattern='^withdraw$'), MessageHandler(filters.Regex('^(💸 )?Вывод USDT$'), withdraw_start_text)], states={WAIT_WALLET: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_wallet)], WAIT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(give_start, pattern='^give_usdt$')], states={WAIT_GIVE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, give_user)], WAIT_GIVE_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, give_amount)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(take_start, pattern='^take_usdt$')], states={WAIT_TAKE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_user)], WAIT_TAKE_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_amount)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(uid_start, pattern='^custom_uid$')], states={WAIT_UID_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, uid_user)], WAIT_UID_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, uid_value)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(hide_start, pattern='^hide_user$')], states={WAIT_HIDE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, hide_finish)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(unhide_start, pattern='^unhide_user$')], states={WAIT_UNHIDE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, unhide_finish)]}, fallbacks=[CommandHandler('cancel', cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(search_user_start, pattern='^search_user$'), MessageHandler(filters.Regex('^Поиск по ID$'), search_user_start_text)], states={WAIT_SEARCH_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_user_finish)]}, fallbacks=[CommandHandler('cancel', cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(search_user_start, pattern='^search_user$'), MessageHandler(filters.Regex('^(🔎 )?Поиск по ID$'), search_user_start_text)], states={WAIT_SEARCH_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_user_finish)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(delete_phrase_start, pattern='^delete_phrase_btn$')], states={WAIT_DELETE_PHRASE: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_phrase_finish)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(broadcast_start, pattern='^broadcast$')], states={WAIT_BROADCAST_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_finish)]}, fallbacks=[CommandHandler('cancel', cancel)]))
     app.add_handler(CallbackQueryHandler(admin_stats_button, pattern='^admin_stats$'))
