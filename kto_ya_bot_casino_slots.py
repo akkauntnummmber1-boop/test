@@ -21,11 +21,11 @@ CASINO_COOLDOWN_SECONDS = 30
 MIN_SLOT_BET_MILLI = 100       # 0.1 USDT
 MAX_SLOT_BET_MILLI = 10000     # 10 USDT
 
-SLOT_SYMBOLS = ['🍒', '🍋', '💎', '⭐', '7️⃣']
+SLOT_SYMBOLS = ['🍒', '🍋', '💎', '⭐️', '7️⃣']
 SLOT_PAY_TABLE = {
     ('7️⃣', '7️⃣', '7️⃣'): 20,
     ('💎', '💎', '💎'): 10,
-    ('⭐', '⭐', '⭐'): 5,
+    ('⭐️', '⭐️', '⭐️'): 5,
     ('🍒', '🍒', '🍒'): 3,
 }
 
@@ -129,13 +129,17 @@ PE_X2 = '<tg-emoji emoji-id="5785038454828043276">✖️</tg-emoji>'
 PE_PLUS_ONE = '<tg-emoji emoji-id="5784967785436154901">➕</tg-emoji>'
 PE_LOADING = '<tg-emoji emoji-id="5787344001862471785">✍️</tg-emoji>'
 PE_FLYING_MONEY = '<tg-emoji emoji-id="5472030678633684592">💸</tg-emoji>'
+PE_SLOT_CHERRY = '<tg-emoji emoji-id="5406759193052995173">🍒</tg-emoji>'
+PE_SLOT_STAR = '<tg-emoji emoji-id="5435957248314579621">⭐️</tg-emoji>'
+PE_SLOT_DIAMOND = '<tg-emoji emoji-id="5471952986970267163">💎</tg-emoji>'
+PE_SLOT_SEVEN = '<tg-emoji emoji-id="5382132232829804982">7️⃣</tg-emoji>'
 
 def pe(text: str) -> str:
     """Заменяет обычные emoji на premium emoji в HTML-тексте сообщения."""
     if text is None:
         return text
     text = str(text)
-    replacements = [('ℹ️', PE_INFO), ('❗️', PE_WARN), ('⚠️', PE_WARN), ('⭐️', PE_STAR), ('👤', PE_USER), ('✅', PE_OK), ('👥', PE_USERS), ('📣', PE_ANNOUNCE), ('✋', PE_STOP), ('⛔', PE_STOP), ('🚫', PE_STOP), ('💰', PE_WALLET), ('💸', PE_FLYING_MONEY), ('➕', PE_PLUS), ('📈', PE_CHART), ('📊', PE_CHART), ('💬', PE_CHAT), ('❗', PE_WARN), ('❌', PE_CROSS), ('🏘', PE_HOME), ('🏠', PE_HOME), ('⭐', PE_STAR), ('👁', PE_EYE), ('🔖', PE_UID), ('🆔', PE_UID), ('🏆', PE_TROPHY), ('🥇', PE_TOP1), ('🥈', PE_TOP2), ('🥉', PE_TOP3), ('🔎', PE_SEARCH), ('⏲', PE_TIMER), ('⏳', PE_TIMER), ('🎭', PE_MASKS), ('🎰', PE_CASINO), ('🎲', PE_DICE), ('🪙', PE_COIN), ('💲', PE_DOLLAR), ('✖️', PE_X2), ('✖', PE_X2), ('✍️', PE_LOADING), ('✍', PE_LOADING), ('⚙', PE_INFO), ('🔢', PE_INFO), ('📋', PE_CHAT), ('📄', PE_CHAT), ('📛', PE_USER), ('🗄', PE_INFO), ('🗑', PE_CROSS), ('🙈', PE_EYE), ('➖', PE_CROSS), ('⬅', PE_HOME), ('🎁', PE_STAR)]
+    replacements = [('ℹ️', PE_INFO), ('❗️', PE_WARN), ('⚠️', PE_WARN), ('⭐️', PE_STAR), ('👤', PE_USER), ('✅', PE_OK), ('👥', PE_USERS), ('📣', PE_ANNOUNCE), ('✋', PE_STOP), ('⛔', PE_STOP), ('🚫', PE_STOP), ('💰', PE_WALLET), ('💸', PE_FLYING_MONEY), ('➕', PE_PLUS), ('📈', PE_CHART), ('📊', PE_CHART), ('💬', PE_CHAT), ('❗', PE_WARN), ('❌', PE_CROSS), ('🏘', PE_HOME), ('🏠', PE_HOME), ('⭐', PE_STAR), ('👁', PE_EYE), ('🔖', PE_UID), ('🆔', PE_UID), ('🏆', PE_TROPHY), ('🥇', PE_TOP1), ('🥈', PE_TOP2), ('🥉', PE_TOP3), ('🔎', PE_SEARCH), ('⏲', PE_TIMER), ('⏳', PE_TIMER), ('7️⃣', PE_SLOT_SEVEN), ('⭐️', PE_SLOT_STAR), ('🍒', PE_SLOT_CHERRY), ('💎', PE_SLOT_DIAMOND), ('🎭', PE_MASKS), ('🎰', PE_CASINO), ('🎲', PE_DICE), ('🪙', PE_COIN), ('💲', PE_DOLLAR), ('✖️', PE_X2), ('✖', PE_X2), ('✍️', PE_LOADING), ('✍', PE_LOADING), ('⚙', PE_INFO), ('🔢', PE_INFO), ('📋', PE_CHAT), ('📄', PE_CHAT), ('📛', PE_USER), ('🗄', PE_INFO), ('🗑', PE_CROSS), ('🙈', PE_EYE), ('➖', PE_CROSS), ('⬅', PE_HOME), ('🎁', PE_STAR)]
     placeholders = []
     for index, (old, new) in enumerate(replacements):
         placeholder = f'__PE_{index}__'
@@ -389,7 +393,7 @@ def search_user_text(user_id: int) -> str | None:
     row = get_user(user_id)
     if not row:
         return None
-    user_id, username, first_name, uid, balance, openings, last_role, hidden = row
+    user_id, username, first_name, uid, balance, openings, last_role, hidden, *_ = row
     if hidden:
         return None
     username_text = f'@{username}' if username else 'нет'
@@ -460,7 +464,7 @@ def profile_text(user_id: int) -> str:
     row = get_user(user_id)
     if not row:
         return 'Профиль не найден. Напиши /start.'
-    user_id, username, first_name, uid, balance, openings, last_role, hidden = row
+    user_id, username, first_name, uid, balance, openings, last_role, hidden, *_ = row
     uname = f'@{username}' if username else 'нет'
     hidden_line = '\n🙈 Статус: <b>скрыт</b>' if hidden else ''
     return f'👤 <b>Профиль</b>\n\n🆔 Telegram ID: <code>{user_id}</code>\n🔖 UID: <code>{html.escape(str(uid))}</code>\n👁 Открытия: <b>{openings}</b>\n💰 Баланс: <b>{money(balance)}</b>\n📛 Username: {html.escape(uname)}{hidden_line}'
@@ -652,7 +656,12 @@ async def show_casino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "<code>/slots 1</code>\n\n"
         f"⏲ Кулдаун между спинами: <b>{CASINO_COOLDOWN_SECONDS} сек.</b>\n"
         f"💲 Минимальная ставка: <b>{money(MIN_SLOT_BET_MILLI)}</b>\n"
-        f"💲 Максимальная ставка: <b>{money(MAX_SLOT_BET_MILLI)}</b>"
+        f"💲 Максимальная ставка: <b>{money(MAX_SLOT_BET_MILLI)}</b>\n\n"
+        "Выплаты слотов:\n"
+        "7️⃣ 7️⃣ 7️⃣ = x20\n"
+        "💎 💎 💎 = x10\n"
+        "⭐️ ⭐️ ⭐️ = x5\n"
+        "🍒 🍒 🍒 = x3"
     )
 
     await send_result(update, context, text, reply_markup=casino_menu())
@@ -1260,8 +1269,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == 'profile':
         if q.message.chat.type != 'private':
             await q.answer('Профиль доступен только в личке.', show_alert=True)
-        else:
-            await send_result(update, context, profile_text(q.from_user.id))
+            return
+
+        register_user(q.from_user)
+        await send_result(update, context, profile_text(q.from_user.id))
+        return
     elif data == 'top3':
         await send_result(update, context, top_text())
     elif data == 'daily_bonus':
