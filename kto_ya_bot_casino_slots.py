@@ -859,12 +859,12 @@ def transfer_money(sender_id: int, target: str, amount_milli: int, comment: str 
 
 def transfer_usage_text() -> str:
     return (
-        "💵 <b>Передача денег</b>\\n\\n"
-        "Команда:\\n"
-        "<code>/pay USER_ID сумма комментарий</code>\\n"
-        "<code>/pay @username сумма комментарий</code>\\n\\n"
-        "Пример:\\n"
-        "<code>/pay 123456789 1 подарок</code>"
+        "💵 <b>Передача денег</b>\n"
+        "🎁 <b>Команды:</b>\n"
+        "👤 <code>/pay USER_ID сумма комментарий</code>\n"
+        "👤 <code>/pay @username сумма комментарий</code>\n"
+        "💬 <b>Пример:</b>\n"
+        "💵 <code>/pay 123456789 1 подарок</code>"
     )
 
 
@@ -2506,9 +2506,9 @@ async def pay_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_result(
         update,
         context,
-        "✅ <b>Перевод выполнен</b>\\n\\n"
-        f"💵 Сумма: <b>{money(amount)}</b>\\n"
-        f"👤 Получатель: <code>{html.escape(str(target))}</code>\\n"
+        "✅ <b>Перевод выполнен</b>\n"
+        f"💵 Сумма: <b>{money(amount)}</b>\n"
+        f"👤 Получатель: <code>{html.escape(str(target))}</code>\n"
         f"💬 Комментарий: <b>{html.escape(comment)}</b>"
     )
 
@@ -2517,9 +2517,9 @@ async def pay_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=recipient_id,
                 text=pe(
-                    "🎁 <b>Вам пришел перевод</b>\\n\\n"
-                    f"👤 От кого: {sender_name}\\n"
-                    f"💵 Сумма: <b>{money(amount)}</b>\\n"
+                    "🎁 <b>Вам пришел перевод</b>\n"
+                    f"👤 От кого: {sender_name}\n"
+                    f"💵 Сумма: <b>{money(amount)}</b>\n"
                     f"💬 Сообщение: <b>{html.escape(comment)}</b>"
                 ),
                 parse_mode="HTML"
@@ -3191,6 +3191,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.message.reply_text(pe(groups_text()), parse_mode='HTML')
 
 def main():
+    print('VERSION_PAY_TEXT_FIX')
     print('VERSION_PAY_TRANSFER_REWARDS')
     print('VERSION_CASE_COOLDOWN_30')
     print('VERSION_SECRET_100X_RARER')
