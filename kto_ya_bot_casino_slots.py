@@ -1516,23 +1516,20 @@ def get_slot_multiplier(symbols: list[str]) -> float:
 
 
 def slot_result_text(user, bet_milli: int, symbols: list[str], multiplier: float, win_milli: int, balance_after: int) -> str:
-    combo = " ".join(symbols)
+    combo = ' '.join(symbols)
 
     if win_milli > 0:
-        status = "Выигрыш"
-        result = f"+{money(win_milli)}"
+        headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🎰'
     else:
-        status = "Проигрыш"
-        result = f"-{money(bet_milli)}"
+        headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре 🎰'
 
     return (
-        "🎰 <b>Слоты</b>\n\n"
-        f"{mention(user)}\n"
-        f"Комбо: <b>{combo}</b>\n"
-        f"Ставка: <b>{money(bet_milli)}</b>\n"
-        f"Результат: <b>{status}</b>\n"
-        f"Итог: <b>{result}</b>\n\n"
-        f"Баланс: <b>{money_balance(balance_after)}</b>"
+        '<b>Spins</b>\n'
+        '🎰\n'
+        f'{mention(user)}\n'
+        f'{headline}\n'
+        f'Комбинация: <b>{combo}</b>\n\n'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
 
 
@@ -1975,12 +1972,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if is_group(update.effective_chat):
         await update.message.reply_text(
-            pe('🎭 Бот для игры «Кто я?»'),
-            parse_mode='HTML',
-            reply_markup=ReplyKeyboardRemove()
-        )
-
-        await update.message.reply_text(
             pe('Главное меню:'),
             parse_mode='HTML',
             reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
@@ -1988,28 +1979,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text(
-        pe('🎭 Бот для игры «Кто я?»\n\nГлавное меню'),
+        pe(main_dashboard_text()),
+        parse_mode='HTML',
+        reply_markup=dashboard_message_menu()
+    )
+
+    # Обновляем нижнюю клавиатуру без лишнего текста.
+    await update.message.reply_text(
+        pe('Выберите действие ниже.'),
         parse_mode='HTML',
         reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
     )
+
+
 
 async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    register_user(update.effective_user)
-    remember_group(update.effective_chat)
+    await open_main_screen(update, context)
 
-    if is_group(update.effective_chat):
-        await update.message.reply_text(
-            pe('Главное меню:'),
-            parse_mode='HTML',
-            reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
-        )
-        return
-
-    await update.message.reply_text(
-        pe('Главное меню'),
-        parse_mode='HTML',
-        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
-    )
 
 
 async def whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2768,21 +2754,16 @@ async def send_ball_result_later(context: ContextTypes.DEFAULT_TYPE, chat_id: in
 
 def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
     is_hit = dice_value >= 4
-
-    if is_hit:
-        status = "Попадание"
-        result = f"+{money(win_milli)}"
-    else:
-        status = "Мимо"
-        result = f"-{money(bet_milli)}"
+    headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🏀' if is_hit else f'Проигрыш <b>{money(bet_milli)}</b> в игре 🏀'
+    detail = 'Мяч попал в корзину!' if is_hit else 'Мяч не попал в корзину :('
 
     return (
-        "🏀 <b>Баскетбол</b>\n\n"
-        f"{mention(user)}\n"
-        f"Ставка: <b>{money(bet_milli)}</b>\n"
-        f"Результат: <b>{status}</b>\n"
-        f"Итог: <b>{result}</b>\n\n"
-        f"Баланс: <b>{money_balance(balance_after)}</b>"
+        '<b>Баскетбол</b>\n'
+        '🏀\n'
+        f'{mention(user)}\n'
+        f'{headline}\n\n'
+        f'{detail}\n\n'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
 
 
@@ -2859,21 +2840,20 @@ async def ball_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def football_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
     is_goal = dice_value >= 3
+    headline = f'Выигрыш <b>{money(win_milli)}</b> в игре ⚽️' if is_goal else f'Проигрыш <b>{money(bet_milli)}</b> в игре ⚽️'
 
     if is_goal:
-        status = "Гол"
-        result = f"+{money(win_milli)}"
+        detail = 'ГОООЛ! Мяч в воротах!'
     else:
-        status = "Мимо ворот"
-        result = f"-{money(bet_milli)}"
+        detail = 'Мяч попал в штангу :(' if int(dice_value or 0) == 2 else 'Мяч не попал в ворота :('
 
     return (
-        "⚽️ <b>Футбол</b>\n\n"
-        f"{mention(user)}\n"
-        f"Ставка: <b>{money(bet_milli)}</b>\n"
-        f"Результат: <b>{status}</b>\n"
-        f"Итог: <b>{result}</b>\n\n"
-        f"Баланс: <b>{money_balance(balance_after)}</b>"
+        '<b>Футбол</b>\n'
+        '⚽️\n'
+        f'{mention(user)}\n'
+        f'{headline}\n\n'
+        f'{detail}\n\n'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
 
 
@@ -3650,6 +3630,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_GAME_HEADERS_FINAL_FIX')
+    print('VERSION_MAIN_MENU_BUTTON_OPENS_SCREEN')
     print('VERSION_USDT_EMOJI_MENU_VISUAL_V2')
     print('VERSION_USDT_EMOJI_MENU_VISUAL')
     print('VERSION_STYLE_LEVELS_REPEAT')
@@ -4083,16 +4065,33 @@ async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(pe(main_dashboard_text()), parse_mode='HTML', reply_markup=dashboard_message_menu())
 
 
+async def open_main_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    register_user(update.effective_user)
+    remember_group(update.effective_chat)
+
+    if is_group(update.effective_chat):
+        await update.message.reply_text(
+            pe('Главное меню:'),
+            parse_mode='HTML',
+            reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
+        )
+        return
+
+    await update.message.reply_text(
+        pe(main_dashboard_text()),
+        parse_mode='HTML',
+        reply_markup=dashboard_message_menu()
+    )
+
+
+
 old_trigger_visual = trigger
 async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
     txt = update.message.text.strip().lower()
     if txt in ('🏠 главное меню', 'главное меню'):
-        if update.effective_chat.type == 'private':
-            await update.message.reply_text(pe(main_dashboard_text()), parse_mode='HTML', reply_markup=dashboard_message_menu())
-        else:
-            await update.message.reply_text(pe('Главное меню:'), parse_mode='HTML', reply_markup=main_menu(is_admin(update.effective_user.id), group=True))
+        await open_main_screen(update, context)
         return
 
     if txt in ('❌ отмена', 'отмена'):
