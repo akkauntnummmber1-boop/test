@@ -1967,29 +1967,7 @@ async def send_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_role_log(context, user, phrase, rarity_label, reward_milli)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    register_user(update.effective_user)
-    remember_group(update.effective_chat)
-
-    if is_group(update.effective_chat):
-        await update.message.reply_text(
-            pe('Главное меню:'),
-            parse_mode='HTML',
-            reply_markup=main_menu(is_admin(update.effective_user.id), group=True)
-        )
-        return
-
-    await update.message.reply_text(
-        pe(main_dashboard_text()),
-        parse_mode='HTML',
-        reply_markup=dashboard_message_menu()
-    )
-
-    # Обновляем нижнюю клавиатуру без лишнего текста.
-    await update.message.reply_text(
-        pe('Выберите действие ниже.'),
-        parse_mode='HTML',
-        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
-    )
+    await open_main_screen(update, context)
 
 
 
@@ -2021,6 +1999,10 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pe(('✅ ' if ok else '❌ ') + msg),
             parse_mode='HTML'
         )
+        return
+
+    if lower_text in ('🏠 главное меню', 'главное меню'):
+        await open_main_screen(update, context)
         return
 
     if lower_text in TRIGGERS or lower_text in ('кто я?', '🎭 кто я'):
@@ -3634,6 +3616,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_RESTORE_BOTTOM_KEYBOARD')
     print('VERSION_MAIN_MENU_KEYBOARD_FINAL_FIX')
     print('VERSION_CANCEL_TO_MAIN_AND_FOOTBALL_TITLE_FIX')
     print('VERSION_GAME_HEADERS_FINAL_FIX')
@@ -4076,21 +4059,28 @@ async def send_football_result_later(context: ContextTypes.DEFAULT_TYPE, chat_id
 
 old_start_visual = start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    register_user(update.effective_user)
-    remember_group(update.effective_chat)
-    if is_group(update.effective_chat):
-        await update.message.reply_text(pe('Главное меню:'), parse_mode='HTML', reply_markup=main_menu(is_admin(update.effective_user.id), group=True))
-        return
-    await update.message.reply_text(pe(main_dashboard_text()), parse_mode='HTML', reply_markup=dashboard_message_menu())
+    await open_main_screen(update, context)
+
 
 
 async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    register_user(update.effective_user)
-    remember_group(update.effective_chat)
-    if is_group(update.effective_chat):
-        await update.message.reply_text(pe('Главное меню:'), parse_mode='HTML', reply_markup=main_menu(is_admin(update.effective_user.id), group=True))
+    await open_main_screen(update, context)
+
+
+
+async def refresh_private_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat or update.effective_chat.type != 'private':
         return
-    await update.message.reply_text(pe(main_dashboard_text()), parse_mode='HTML', reply_markup=dashboard_message_menu())
+
+    # Telegram не позволяет поставить inline-кнопки и нижнюю клавиатуру на одно сообщение.
+    # Поэтому нижнюю клавиатуру обновляем отдельным коротким сообщением.
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=pe('⌨️ Клавиатура обновлена.'),
+        parse_mode='HTML',
+        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
+    )
+
 
 
 async def open_main_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -4111,9 +4101,10 @@ async def open_main_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=dashboard_message_menu()
     )
 
+    await refresh_private_keyboard(update, context)
 
 
-old_trigger_visual = trigger
+
 async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
@@ -4154,6 +4145,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await q.edit_message_text(pe('Главное меню:'), parse_mode='HTML', reply_markup=main_menu(is_admin(q.from_user.id), group=True))
         else:
             await q.edit_message_text(pe(main_dashboard_text()), parse_mode='HTML', reply_markup=dashboard_message_menu())
+            await refresh_private_keyboard(update, context)
         return
     if data.startswith('repeat:'):
         await q.answer()
