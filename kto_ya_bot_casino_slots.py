@@ -30,6 +30,8 @@ SLOT_WIN_CHANCE_PERCENT = 12  # шанс выигрыша в слотах: 10–
 
 MIN_COIN_BET_MILLI = 100       # 0.1 USDT
 MAX_COIN_BET_MILLI = 10000     # 10 USDT
+MIN_BALL_BET_MILLI = 100       # 0.1 USDT
+MAX_BALL_BET_MILLI = 10000     # 10 USDT
 
 SLOT_SYMBOLS = ['🍒', '🍋', '💎', '⭐️', '7️⃣']
 SLOT_PAY_TABLE = {
@@ -1454,6 +1456,7 @@ async def show_casino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "<code>/slots 1</code>\n"
         "<code>/coin орел 1</code>\n"
         "<code>/coin решка 1</code>\n"
+        "<code>/ball 1</code>\n"
         "<code>/case open</code>\n\n"
         f"⏲ Кулдаун между играми: <b>{CASINO_COOLDOWN_SECONDS} сек.</b>\n"
         f"💲 Минимальная ставка: <b>{money(MIN_SLOT_BET_MILLI)}</b>\n"
@@ -1466,7 +1469,7 @@ async def show_casino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🍒 🍒 🍒 = x3"
     )
 
-    await send_clean_group_result(update, context, text, reply_markup=casino_menu())
+    await send_clean_group_result(update, context, text)
 
 
 async def play_slots(update: Update, context: ContextTypes.DEFAULT_TYPE, bet_milli: int):
@@ -2526,6 +2529,114 @@ async def pay_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
 
+def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
+    # Для Telegram-баскетбола значения 4 и 5 считаем попаданием.
+    is_hit = dice_value >= 4
+
+    if is_hit:
+        result_line = f"✅ <b>Попадание!</b> Выигрыш: <b>+{money(win_milli)}</b>"
+    else:
+        result_line = f"❌ <b>Мимо!</b> Проигрыш: <b>-{money(bet_milli)}</b>"
+
+    return (
+        f"🏀 <b>Баскетбол</b>\n"
+        f"👤 Игрок: {mention(user)}\n"
+        f"💵 Ставка: <b>{money(bet_milli)}</b>\n"
+        f"{result_line}\n"
+        f"💰 Баланс: <b>{money(balance_after)}</b>"
+    )
+
+
+async def ball_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    chat = update.effective_chat
+
+    register_user(user)
+    remember_group(chat)
+
+    if is_banned_user(user.id):
+        await send_result(update, context, "⛔ Вы забанены у бота.")
+        return
+
+    if not context.args:
+        await send_result(
+            update,
+            context,
+            "🏀 <b>Баскетбол</b>\n"
+            "Команда: <code>/ball сумма</code>\n"
+            "Пример: <code>/ball 1</code>\n"
+            f"Минимальная ставка: <b>{money(MIN_BALL_BET_MILLI)}</b>\n"
+            f"Максимальная ставка: <b>{money(MAX_BALL_BET_MILLI)}</b>"
+        )
+        return
+
+    bet_milli = parse_money(context.args[0])
+
+    if bet_milli is None or bet_milli <= 0:
+        await send_result(update, context, "Введите ставку числом. Например: <code>/ball 1</code>")
+        return
+
+    if bet_milli < MIN_BALL_BET_MILLI:
+        await send_result(update, context, f"❗️ Минимальная ставка: <b>{money(MIN_BALL_BET_MILLI)}</b>")
+        return
+
+    if bet_milli > MAX_BALL_BET_MILLI:
+        await send_result(update, context, f"❗️ Максимальная ставка: <b>{money(MAX_BALL_BET_MILLI)}</b>")
+        return
+
+    row = get_user(user.id)
+
+    if not row:
+        await send_result(update, context, "Профиль не найден. Напиши /start.")
+        return
+
+    balance_milli = int(row[4])
+
+    if balance_milli < bet_milli:
+        await send_result(update, context, f"❌ Недостаточно средств.\nВаш баланс: <b>{money(balance_milli)}</b>")
+        return
+
+    last_spin = get_casino_last_spin(user.id)
+    left = CASINO_COOLDOWN_SECONDS - (ts() - last_spin)
+
+    if left > 0:
+        await send_result(update, context, f"⏲ Подождите еще <b>{left} сек.</b> перед следующей игрой.")
+        return
+
+    ok, msg = take_balance(user.id, bet_milli)
+
+    if not ok:
+        await send_result(update, context, f"❌ {html.escape(msg)}")
+        return
+
+    # Отправляем настоящую Telegram-анимацию баскетбольного мяча.
+    dice_msg = await context.bot.send_dice(
+        chat_id=chat.id,
+        emoji="🏀",
+        reply_to_message_id=update.message.message_id if update.message else None,
+    )
+
+    dice_value = dice_msg.dice.value if dice_msg.dice else 1
+    is_hit = dice_value >= 4
+    win_milli = bet_milli * 2 if is_hit else 0
+
+    if win_milli > 0:
+        add_balance(user.id, win_milli)
+
+    set_casino_last_spin(user.id)
+
+    updated = get_user(user.id)
+    balance_after = int(updated[4]) if updated else 0
+
+    await context.bot.send_message(
+        chat_id=chat.id,
+        text=pe(ball_result_text(user, bet_milli, dice_value, win_milli, balance_after)),
+        parse_mode="HTML",
+        reply_to_message_id=dice_msg.message_id,
+    )
+
+
+
 async def case_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_user(update.effective_user)
     remember_group(update.effective_chat)
@@ -3189,6 +3300,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.message.reply_text(pe(groups_text()), parse_mode='HTML')
 
 def main():
+    print('VERSION_BASKETBALL_GAME')
+    print('VERSION_CASINO_NO_BUTTONS')
     print('VERSION_GAME_RESULT_NO_BUTTONS')
     print('VERSION_PAY_TEXT_FIX')
     print('VERSION_PAY_TRANSFER_REWARDS')
@@ -3226,6 +3339,7 @@ def main():
     app.add_handler(CommandHandler('casino', casino_cmd))
     app.add_handler(CommandHandler('case', case_cmd))
     app.add_handler(CommandHandler('pay', pay_cmd))
+    app.add_handler(CommandHandler('ball', ball_cmd))
     app.add_handler(CommandHandler('slots', slots_cmd))
     app.add_handler(CommandHandler('coin', coin_cmd))
     app.add_handler(CommandHandler('search', search_cmd))
