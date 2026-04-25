@@ -3616,6 +3616,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_NO_TECH_KEYBOARD_MESSAGE')
+    print('VERSION_HIDE_KEYBOARD_REFRESH_MESSAGE')
     print('VERSION_RESTORE_BOTTOM_KEYBOARD')
     print('VERSION_MAIN_MENU_KEYBOARD_FINAL_FIX')
     print('VERSION_CANCEL_TO_MAIN_AND_FOOTBALL_TITLE_FIX')
@@ -4069,17 +4071,7 @@ async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def refresh_private_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.effective_chat or update.effective_chat.type != 'private':
-        return
-
-    # Telegram не позволяет поставить inline-кнопки и нижнюю клавиатуру на одно сообщение.
-    # Поэтому нижнюю клавиатуру обновляем отдельным коротким сообщением.
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=pe('⌨️ Клавиатура обновлена.'),
-        parse_mode='HTML',
-        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
-    )
+    return
 
 
 
@@ -4098,10 +4090,8 @@ async def open_main_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         pe(main_dashboard_text()),
         parse_mode='HTML',
-        reply_markup=dashboard_message_menu()
+        reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
     )
-
-    await refresh_private_keyboard(update, context)
 
 
 
@@ -4145,7 +4135,6 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await q.edit_message_text(pe('Главное меню:'), parse_mode='HTML', reply_markup=main_menu(is_admin(q.from_user.id), group=True))
         else:
             await q.edit_message_text(pe(main_dashboard_text()), parse_mode='HTML', reply_markup=dashboard_message_menu())
-            await refresh_private_keyboard(update, context)
         return
     if data.startswith('repeat:'):
         await q.answer()
