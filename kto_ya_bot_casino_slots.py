@@ -1282,11 +1282,9 @@ def reply_main_menu(admin=False, group=False):
         rows = []
     else:
         rows = [
-            ['🎭 Кто я'],
-            ['👤 Профиль', '💸 Вывод 💸'],
-            ['💵 Передача денег', '🎰 Казино'],
-            ['🎁 Промокод'],
-            ['🏆 Топ 3'],
+            ['🎭 Кто я', '🎮 Играть'],
+            ['👤 Профиль', '🏆 Топ 3'],
+            ['💵 Передача денег', '🎁 Промокод'],
             ['🏠 Главное меню'],
         ]
 
@@ -1296,6 +1294,7 @@ def reply_main_menu(admin=False, group=False):
         is_persistent=True,
         input_field_placeholder='Выберите действие...'
     )
+
 
 
 def role_menu(group=False):
@@ -2765,7 +2764,6 @@ def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, bala
 
     return (
         '<b>Баскетбол</b>\n'
-        '🏀\n'
         f'{mention(user)}\n'
         f'{headline}\n\n'
         f'{detail}\n\n'
@@ -2856,7 +2854,6 @@ def football_result_text(user, bet_milli: int, dice_value: int, win_milli: int, 
 
     return (
         '<b>Футбол</b>\n'
-        '⚽️\n'
         f'{mention(user)}\n'
         f'{headline}\n\n'
         f'{detail}\n\n'
@@ -3031,7 +3028,7 @@ async def coin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(pe('Отменено.'), parse_mode='HTML')
+    await update.message.reply_text(pe('Действие закрыто.'), parse_mode='HTML')
     return ConversationHandler.END
 
 async def add_phrase_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3637,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_MAIN_MENU_KEYBOARD_FINAL_FIX')
     print('VERSION_CANCEL_TO_MAIN_AND_FOOTBALL_TITLE_FIX')
     print('VERSION_GAME_HEADERS_FINAL_FIX')
     print('VERSION_MAIN_MENU_BUTTON_OPENS_SCREEN')
@@ -3867,7 +3865,14 @@ def reply_main_menu(admin=False, group=False):
             ['💵 Передача денег', '🎁 Промокод'],
             ['🏠 Главное меню'],
         ]
-    return ReplyKeyboardMarkup(rows, resize_keyboard=True, is_persistent=True, input_field_placeholder='Выберите действие...')
+
+    return ReplyKeyboardMarkup(
+        rows,
+        resize_keyboard=True,
+        is_persistent=True,
+        input_field_placeholder='Выберите действие...'
+    )
+
 
 
 def profile_actions_menu():
@@ -4019,7 +4024,6 @@ def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, bala
 
     return (
         '<b>Баскетбол</b>\n'
-        '🏀\n'
         f'{mention(user)}\n'
         f'{headline}\n\n'
         f'{detail}\n\n'
@@ -4051,7 +4055,6 @@ def football_result_text(user, bet_milli: int, dice_value: int, win_milli: int, 
 
     return (
         '<b>Футбол</b>\n'
-        '⚽️\n'
         f'{mention(user)}\n'
         f'{headline}\n\n'
         f'{detail}\n\n'
@@ -4117,10 +4120,6 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text.strip().lower()
     if txt in ('🏠 главное меню', 'главное меню'):
         await open_main_screen(update, context)
-        return
-
-    if txt in ('❌ отмена', 'отмена'):
-        await cancel(update, context)
         return
     if txt in ('играть', '🎮 играть'):
         await show_casino(update, context)
@@ -4360,7 +4359,7 @@ async def football_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 old_cancel_visual = cancel
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(pe('Действие отменено.'), parse_mode='HTML')
+    await update.message.reply_text(pe('Действие закрыто.'), parse_mode='HTML')
     if update.effective_chat.type == 'private':
         return ConversationHandler.END
 
