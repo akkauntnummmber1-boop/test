@@ -19,8 +19,11 @@ ROLE_COOLDOWN_SECONDS = 10 * 60
 
 CASINO_COOLDOWN_SECONDS = 30
 CASE_PRICE_MILLI = 5000  # 5 USDT
+CASE_COOLDOWN_SECONDS = 30
 LUCK_BOOSTER_SECONDS = 30 * 60
 CASE_SECRET_REWARD_CHANCE = 1  # 1 из 1000
+CASE_DISCOUNT_MILLI = 2000  # скидка 2 USDT на следующий кейс
+CASE_PREFIXES = ["Любитель казика", "Подружка админа", "T1 WORKER"]
 MIN_SLOT_BET_MILLI = 100       # 0.1 USDT
 MAX_SLOT_BET_MILLI = 10000     # 10 USDT
 SLOT_WIN_CHANCE_PERCENT = 12  # шанс выигрыша в слотах: 10–15%
@@ -41,11 +44,11 @@ MIN_WITHDRAW_MILLI = 100000
 DAY_SECONDS = 24 * 60 * 60
 DAILY_ROLE_BONUS_LIMIT = 5
 RARITY_CHANCES = [
-    ('common', 69),
-    ('rare', 20),
-    ('epic', 8),
-    ('legendary', 2),
-    ('secret', 1),
+    ('common', 6900),
+    ('rare', 2000),
+    ('epic', 800),
+    ('legendary', 200),
+    ('secret', 1),  # секретная роль стала примерно в 100 раз реже
 ]
 
 RARITY_LABELS = {
@@ -57,11 +60,11 @@ RARITY_LABELS = {
 }
 
 ROLE_REWARDS_MILLI = {
-    'common': 100,       # 0.1 USDT
-    'rare': 200,         # 0.2 USDT
-    'epic': 300,         # 0.3 USDT
-    'legendary': 500,    # 0.5 USDT
-    'secret': 40000,     # 40 USDT
+    'common': 500,       # 0.5 USDT
+    'rare': 600,         # 0.6 USDT
+    'epic': 1000,        # 1 USDT
+    'legendary': 1500,   # 1.5 USDT
+    'secret': 30000,     # 30 USDT
 }
 
 RARITY_ALIASES = {
@@ -140,6 +143,10 @@ PE_X2 = '<tg-emoji emoji-id="5785038454828043276">✖️</tg-emoji>'
 PE_PLUS_ONE = '<tg-emoji emoji-id="5784967785436154901">➕</tg-emoji>'
 PE_LOADING = '<tg-emoji emoji-id="5787344001862471785">✍️</tg-emoji>'
 PE_FLYING_MONEY = '<tg-emoji emoji-id="5472030678633684592">💸</tg-emoji>'
+PE_TRANSFER_USDT = '<tg-emoji emoji-id="5201692367437974073">💵</tg-emoji>'
+PE_TRANSFER_GIFT = '<tg-emoji emoji-id="5199749070830197566">🎁</tg-emoji>'
+PE_TRANSFER_CHAT = '<tg-emoji emoji-id="5895457880710058528">💬</tg-emoji>'
+PE_TRANSFER_USER = '<tg-emoji emoji-id="5373012449597335010">👤</tg-emoji>'
 PE_SLOT_CHERRY = '<tg-emoji emoji-id="5406759193052995173">🍒</tg-emoji>'
 PE_SLOT_STAR = '<tg-emoji emoji-id="5435957248314579621">⭐️</tg-emoji>'
 PE_SLOT_DIAMOND = '<tg-emoji emoji-id="5471952986970267163">💎</tg-emoji>'
@@ -165,7 +172,7 @@ def pe(text: str) -> str:
     if text is None:
         return text
     text = str(text)
-    replacements = [('ℹ️', PE_INFO), ('❗️', PE_WARN), ('⚠️', PE_WARN), ('⭐️', PE_STAR), ('👤', PE_USER), ('✅', PE_OK), ('👥', PE_USERS), ('📣', PE_ANNOUNCE), ('✋', PE_STOP), ('⛔', PE_STOP), ('🚫', PE_STOP), ('💰', PE_WALLET), ('💸', PE_FLYING_MONEY), ('➕', PE_PLUS), ('📈', PE_CHART), ('📊', PE_CHART), ('💬', PE_CHAT), ('❗', PE_WARN), ('❌', PE_CROSS), ('🏘', PE_HOME), ('🏠', PE_HOME), ('⭐', PE_STAR), ('👁', PE_EYE), ('🔖', PE_UID), ('🆔', PE_UID), ('🏆', PE_TROPHY), ('🥇', PE_TOP1), ('🥈', PE_TOP2), ('🥉', PE_TOP3), ('🔎', PE_SEARCH), ('⏲', PE_TIMER), ('⏳', PE_TIMER), ('1️⃣', PE_NUM_1), ('2️⃣', PE_NUM_2), ('3️⃣', PE_NUM_3), ('4️⃣', PE_NUM_4), ('5️⃣', PE_NUM_5), ('6️⃣', PE_NUM_6), ('7️⃣', PE_NUM_7), ('8️⃣', PE_NUM_8), ('9️⃣', PE_NUM_9), ('0️⃣', PE_NUM_0), ('🩶', PE_RARITY_COMMON), ('💚', PE_RARITY_RARE), ('🩷', PE_RARITY_EPIC), ('💛', PE_RARITY_LEGENDARY), ('🖤', PE_RARITY_SECRET), ('⭐️', PE_SLOT_STAR), ('🍒', PE_SLOT_CHERRY), ('💎', PE_SLOT_DIAMOND), ('🎭', PE_MASKS), ('🎰', PE_CASINO), ('🎲', PE_DICE), ('🪙', PE_COIN), ('💲', PE_DOLLAR), ('✖️', PE_X2), ('✖', PE_X2), ('✍️', PE_LOADING), ('✍', PE_LOADING), ('⚙', PE_INFO), ('🔢', PE_INFO), ('📋', PE_CHAT), ('📄', PE_CHAT), ('📛', PE_USER), ('🗄', PE_INFO), ('🗑', PE_CROSS), ('🙈', PE_EYE), ('➖', PE_CROSS), ('⬅', PE_HOME), ('🎁', PE_STAR)]
+    replacements = [('ℹ️', PE_INFO), ('❗️', PE_WARN), ('⚠️', PE_WARN), ('⭐️', PE_STAR), ('👤', PE_USER), ('✅', PE_OK), ('👥', PE_USERS), ('📣', PE_ANNOUNCE), ('✋', PE_STOP), ('⛔', PE_STOP), ('🚫', PE_STOP), ('💰', PE_WALLET), ('💸', PE_FLYING_MONEY), ('💵', PE_TRANSFER_USDT), ('🎁', PE_TRANSFER_GIFT), ('💬', PE_TRANSFER_CHAT), ('👤', PE_TRANSFER_USER), ('➕', PE_PLUS), ('📈', PE_CHART), ('📊', PE_CHART), ('💬', PE_CHAT), ('❗', PE_WARN), ('❌', PE_CROSS), ('🏘', PE_HOME), ('🏠', PE_HOME), ('⭐', PE_STAR), ('👁', PE_EYE), ('🔖', PE_UID), ('🆔', PE_UID), ('🏆', PE_TROPHY), ('🥇', PE_TOP1), ('🥈', PE_TOP2), ('🥉', PE_TOP3), ('🔎', PE_SEARCH), ('⏲', PE_TIMER), ('⏳', PE_TIMER), ('1️⃣', PE_NUM_1), ('2️⃣', PE_NUM_2), ('3️⃣', PE_NUM_3), ('4️⃣', PE_NUM_4), ('5️⃣', PE_NUM_5), ('6️⃣', PE_NUM_6), ('7️⃣', PE_NUM_7), ('8️⃣', PE_NUM_8), ('9️⃣', PE_NUM_9), ('0️⃣', PE_NUM_0), ('🩶', PE_RARITY_COMMON), ('💚', PE_RARITY_RARE), ('🩷', PE_RARITY_EPIC), ('💛', PE_RARITY_LEGENDARY), ('🖤', PE_RARITY_SECRET), ('⭐️', PE_SLOT_STAR), ('🍒', PE_SLOT_CHERRY), ('💎', PE_SLOT_DIAMOND), ('🎭', PE_MASKS), ('🎰', PE_CASINO), ('🎲', PE_DICE), ('🪙', PE_COIN), ('💲', PE_DOLLAR), ('✖️', PE_X2), ('✖', PE_X2), ('✍️', PE_LOADING), ('✍', PE_LOADING), ('⚙', PE_INFO), ('🔢', PE_INFO), ('📋', PE_CHAT), ('📄', PE_CHAT), ('📛', PE_USER), ('🗄', PE_INFO), ('🗑', PE_CROSS), ('🙈', PE_EYE), ('➖', PE_CROSS), ('⬅', PE_HOME), ('🎁', PE_STAR)]
     placeholders = []
     for index, (old, new) in enumerate(replacements):
         placeholder = f'__PE_{index}__'
@@ -235,7 +242,18 @@ def roll_weighted(items):
     return items[-1][0]
 
 def roll_role_rarity() -> str:
-    return roll_weighted(RARITY_CHANCES)
+    total = sum(weight for _, weight in RARITY_CHANCES)
+    pick = random.randint(1, total)
+    current = 0
+
+    for rarity, weight in RARITY_CHANCES:
+        current += weight
+        if pick <= current:
+            return rarity
+
+    return 'common'
+
+
 
 def roll_daily_bonus_amount() -> int:
     return roll_weighted(DAILY_BONUS_CHANCES)
@@ -315,6 +333,15 @@ def init_db():
 
     if 'secret_case_rewards' not in user_cols:
         cur.execute("ALTER TABLE users ADD COLUMN secret_case_rewards INTEGER NOT NULL DEFAULT 0")
+
+    if 'last_case_open_at' not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN last_case_open_at INTEGER NOT NULL DEFAULT 0")
+
+    if 'case_discount_milli' not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN case_discount_milli INTEGER NOT NULL DEFAULT 0")
+
+    if 'prefix' not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN prefix TEXT")
 
     cur.execute("INSERT OR IGNORE INTO meta (key, value) VALUES ('next_uid', '1')")
     conn.commit()
@@ -426,11 +453,11 @@ def random_phrase(user_id: int | None = None) -> tuple[str, str] | None:
     # Бустер удачи: шанс редкой и выше x2 на 30 минут.
     if user_id and has_luck_booster(user_id):
         chances = {
-            "common": 38,
-            "rare": 40,
-            "epic": 16,
-            "legendary": 4,
-            "secret": 2,
+            "common": 6900,
+            "rare": 4000,
+            "epic": 1600,
+            "legendary": 400,
+            "secret": 2,  # бустер x2, но секретная все равно очень редкая
         }
         with db() as conn:
             available = conn.execute("SELECT rarity, COUNT(*) FROM phrases GROUP BY rarity").fetchall()
@@ -769,6 +796,78 @@ def unhide_user(user_id: int) -> tuple[bool, str]:
         conn.commit()
     return (True, 'Пользователь раскрыт.')
 
+def find_user_for_transfer(target: str):
+    target = (target or "").strip()
+
+    if not target:
+        return None
+
+    with db() as conn:
+        if target.isdigit():
+            return conn.execute(
+                "SELECT user_id, username, first_name, uid, balance_milli, hidden FROM users WHERE user_id=? OR uid=?",
+                (int(target), target),
+            ).fetchone()
+
+        username = target[1:] if target.startswith("@") else target
+
+        return conn.execute(
+            "SELECT user_id, username, first_name, uid, balance_milli, hidden FROM users WHERE lower(username)=lower(?)",
+            (username,),
+        ).fetchone()
+
+
+def transfer_money(sender_id: int, target: str, amount_milli: int, comment: str = "") -> tuple[bool, str, int | None]:
+    if amount_milli <= 0:
+        return False, "Сумма должна быть больше 0.", None
+
+    if sender_id and is_banned_user(sender_id):
+        return False, "Вы забанены у бота.", None
+
+    recipient = find_user_for_transfer(target)
+
+    if not recipient:
+        return False, "Получатель не найден. Он должен быть зарегистрирован в боте.", None
+
+    recipient_id, recipient_username, recipient_first_name, recipient_uid, recipient_balance, hidden = recipient
+
+    if hidden:
+        return False, "Получатель не найден.", None
+
+    if int(recipient_id) == int(sender_id):
+        return False, "Нельзя переводить самому себе.", None
+
+    sender = get_user(sender_id)
+
+    if not sender:
+        return False, "Профиль отправителя не найден. Напиши /start.", None
+
+    sender_balance = int(sender[4])
+
+    if sender_balance < amount_milli:
+        return False, f"Недостаточно средств. Ваш баланс: <b>{money(sender_balance)}</b>", None
+
+    ok, msg = take_balance(sender_id, amount_milli)
+
+    if not ok:
+        return False, msg, None
+
+    add_balance(recipient_id, amount_milli)
+
+    return True, "Перевод выполнен.", int(recipient_id)
+
+
+def transfer_usage_text() -> str:
+    return (
+        "💵 <b>Передача денег</b>\\n\\n"
+        "Команда:\\n"
+        "<code>/pay USER_ID сумма комментарий</code>\\n"
+        "<code>/pay @username сумма комментарий</code>\\n\\n"
+        "Пример:\\n"
+        "<code>/pay 123456789 1 подарок</code>"
+    )
+
+
 def search_user_text(user_id: int) -> str | None:
     row = get_user(user_id)
 
@@ -897,6 +996,10 @@ def profile_text(user_id: int) -> str:
 
     uname = f"@{username}" if username else "нет"
     hidden_line = "\n🙈 Статус: <b>скрыт</b>" if hidden else ""
+    prefix = get_user_prefix(user_id)
+    prefix_line = f"\n🔖 Префикс: <b>{html.escape(prefix)}</b>" if prefix else ""
+    case_discount = get_case_discount(user_id)
+    discount_line = f"\n🏷 Скидка на кейс: <b>{money(case_discount)}</b>" if case_discount > 0 else ""
     booster_left = luck_booster_left(user_id)
     booster_line = f"\n📈 Бустер удачи: <b>{booster_time_text(booster_left)}</b>" if booster_left > 0 else ""
 
@@ -916,6 +1019,8 @@ def profile_text(user_id: int) -> str:
         f"💰 Баланс: <b>{money(balance)}</b>\n"
         f"📛 Username: {html.escape(uname)}"
         f"{hidden_line}"
+        f"{prefix_line}"
+        f"{discount_line}"
         f"{booster_line}"
         f"{ban_line}"
     )
@@ -1069,7 +1174,7 @@ def main_menu(admin=False, group=False):
             InlineKeyboardButton('👤 Профиль', callback_data='profile'),
             InlineKeyboardButton('💸 Вывод USDT', callback_data='withdraw')
         ])
-        buttons.append([InlineKeyboardButton('🔎 Поиск по ID', callback_data='search_user')])
+        buttons.append([InlineKeyboardButton('💵 Передача денег', callback_data='transfer_money')])
         buttons.append([InlineKeyboardButton('🎁 Промокод', callback_data='promo_activate')])
 
     buttons.append([InlineKeyboardButton('🎰 Казино', callback_data='casino')])
@@ -1085,7 +1190,7 @@ def reply_main_menu(admin=False, group=False):
         rows = [
             ['🎭 Кто я'],
             ['👤 Профиль', '💸 Вывод USDT'],
-            ['🔎 Поиск по ID', '🎰 Казино'],
+            ['💵 Передача денег', '🎰 Казино'],
             ['🎁 Промокод'],
             ['🏆 Топ 3'],
         ]
@@ -1106,7 +1211,7 @@ def role_menu(group=False):
             InlineKeyboardButton('👤 Профиль', callback_data='profile'),
             InlineKeyboardButton('💸 Вывод USDT', callback_data='withdraw')
         ])
-        buttons.append([InlineKeyboardButton('🔎 Поиск по ID', callback_data='search_user')])
+        buttons.append([InlineKeyboardButton('💵 Передача денег', callback_data='transfer_money')])
         buttons.append([InlineKeyboardButton('🎁 Промокод', callback_data='promo_activate')])
         buttons.append([InlineKeyboardButton('🎰 Казино', callback_data='casino')])
 
@@ -1125,7 +1230,7 @@ def admin_panel_text() -> str:
         "7️⃣ <code>/hide USER_ID</code> — скрыть пользователя\n"
         "8️⃣ <code>/unhide USER_ID</code> — раскрыть пользователя\n"
         "9️⃣ <code>/ban USER_ID TIME причина</code> — забанить пользователя\n"
-        "1️⃣0️⃣ <code>/unban USER_ID</code> — разбанить пользователя\n\n"
+        "1️⃣0️⃣ <code>/unban USER_ID</code> — разбанить пользователя\n<code>/search USER_ID</code> — поиск пользователя по ID\n\n"
         "<b>Дополнительно:</b>\n"
         "<code>/promo_create CODE SUM LIMIT</code> — создать промокод\n"
         "<code>/promos</code> — список промокодов\n"
@@ -1348,7 +1453,8 @@ async def show_casino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Команды:\n"
         "<code>/slots 1</code>\n"
         "<code>/coin орел 1</code>\n"
-        "<code>/coin решка 1</code>\n\n"
+        "<code>/coin решка 1</code>\n"
+        "<code>/case open</code>\n\n"
         f"⏲ Кулдаун между играми: <b>{CASINO_COOLDOWN_SECONDS} сек.</b>\n"
         f"💲 Минимальная ставка: <b>{money(MIN_SLOT_BET_MILLI)}</b>\n"
         f"💲 Максимальная ставка: <b>{money(MAX_SLOT_BET_MILLI)}</b>\n"
@@ -1747,6 +1853,10 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_casino(update, context)
         return
 
+    if lower_text in ('передача денег', '💵 передача денег'):
+        await send_result(update, context, transfer_usage_text())
+        return
+
     if lower_text in ('меню', '🏠 меню'):
         if is_group(update.effective_chat):
             await update.message.reply_text(
@@ -2069,6 +2179,10 @@ async def top_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_user(update.effective_user)
+
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text(pe('⛔ У тебя нет доступа.'), parse_mode='HTML')
+        return
     if not context.args or not context.args[0].isdigit():
         await update.message.reply_text(pe('Напиши так:\n/search 123456789'), parse_mode='HTML')
         return
@@ -2160,57 +2274,258 @@ async def promo_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_result(update, context, ("✅ " if ok else "❌ ") + msg)
 
 
+def get_case_discount(user_id: int) -> int:
+    try:
+        with db() as conn:
+            user_cols = columns(conn, "users")
+
+            if "case_discount_milli" not in user_cols:
+                return 0
+
+            row = conn.execute(
+                "SELECT case_discount_milli FROM users WHERE user_id=?",
+                (user_id,),
+            ).fetchone()
+
+            if not row:
+                return 0
+
+            return max(0, int(row[0] or 0))
+    except Exception:
+        return 0
+
+
+def set_case_discount(user_id: int, amount_milli: int) -> None:
+    try:
+        with db() as conn:
+            user_cols = columns(conn, "users")
+
+            if "case_discount_milli" not in user_cols:
+                return
+
+            conn.execute(
+                "UPDATE users SET case_discount_milli=? WHERE user_id=?",
+                (max(0, int(amount_milli)), user_id),
+            )
+            conn.commit()
+    except Exception:
+        pass
+
+
+def set_user_prefix(user_id: int, prefix: str) -> None:
+    try:
+        with db() as conn:
+            user_cols = columns(conn, "users")
+
+            if "prefix" not in user_cols:
+                return
+
+            conn.execute(
+                "UPDATE users SET prefix=? WHERE user_id=?",
+                (prefix, user_id),
+            )
+            conn.commit()
+    except Exception:
+        pass
+
+
+def get_user_prefix(user_id: int) -> str | None:
+    try:
+        with db() as conn:
+            user_cols = columns(conn, "users")
+
+            if "prefix" not in user_cols:
+                return None
+
+            row = conn.execute(
+                "SELECT prefix FROM users WHERE user_id=?",
+                (user_id,),
+            ).fetchone()
+
+            if not row:
+                return None
+
+            return row[0]
+    except Exception:
+        return None
+
+
+def get_last_case_open_at(user_id: int) -> int:
+    try:
+        with db() as conn:
+            user_cols = columns(conn, "users")
+
+            if "last_case_open_at" not in user_cols:
+                return 0
+
+            row = conn.execute(
+                "SELECT last_case_open_at FROM users WHERE user_id=?",
+                (user_id,),
+            ).fetchone()
+
+            if not row:
+                return 0
+
+            return int(row[0] or 0)
+    except Exception:
+        return 0
+
+
+def set_last_case_open_at(user_id: int) -> None:
+    try:
+        with db() as conn:
+            user_cols = columns(conn, "users")
+
+            if "last_case_open_at" not in user_cols:
+                return
+
+            conn.execute(
+                "UPDATE users SET last_case_open_at=? WHERE user_id=?",
+                (ts(), user_id),
+            )
+            conn.commit()
+    except Exception:
+        pass
+
+
 def open_case(user_id: int) -> tuple[bool, str]:
     row = get_user(user_id)
 
     if not row:
         return False, "Профиль не найден. Напиши /start."
 
-    balance = int(row[4])
+    last_case = get_last_case_open_at(user_id)
+    cooldown_left = CASE_COOLDOWN_SECONDS - (ts() - last_case)
 
-    if balance < CASE_PRICE_MILLI:
+    if cooldown_left > 0:
+        return False, f"Кейс можно открыть через <b>{cooldown_left} сек.</b>"
+
+    balance = int(row[4])
+    discount = min(get_case_discount(user_id), CASE_PRICE_MILLI)
+    price = max(0, CASE_PRICE_MILLI - discount)
+
+    if balance < price:
         return False, (
             "Недостаточно средств для открытия кейса.\n"
-            f"Цена кейса: <b>{money(CASE_PRICE_MILLI)}</b>\n"
+            f"Цена кейса: <b>{money(price)}</b>\n"
+            f"Ваша скидка: <b>{money(discount)}</b>\n"
             f"Ваш баланс: <b>{money(balance)}</b>"
         )
 
-    ok, msg = take_balance(user_id, CASE_PRICE_MILLI)
+    if price > 0:
+        ok, msg = take_balance(user_id, price)
 
-    if not ok:
-        return False, msg
+        if not ok:
+            return False, msg
 
+    set_last_case_open_at(user_id)
+
+    # Скидка применяется только на один следующий кейс.
+    if discount > 0:
+        set_case_discount(user_id, 0)
+
+    # Секретная награда: очень маленький шанс 1 из 1000.
     if random.randint(1, 1000) <= CASE_SECRET_REWARD_CHANCE:
         secret_amount = 100000
         add_balance(user_id, secret_amount)
         add_secret_case_reward(user_id)
         return True, (
             "🎁 <b>Кейс открыт!</b>\n\n"
-            f"💸 Списано: <b>{money(CASE_PRICE_MILLI)}</b>\n"
+            f"💸 Списано: <b>{money(price)}</b>\n"
             "🖤 <b>СЕКРЕТНАЯ НАГРАДА!</b>\n"
             f"💰 Получено: <b>+{money(secret_amount)}</b>"
         )
 
     roll = random.randint(1, 100)
 
-    if roll <= 75:
-        amount = random.randint(1, 6) * 1000
-        add_balance(user_id, amount)
+    # Самый высокий шанс — ничего.
+    if roll <= 55:
         return True, (
             "🎁 <b>Кейс открыт!</b>\n\n"
-            f"💸 Списано: <b>{money(CASE_PRICE_MILLI)}</b>\n"
-            "💰 Награда: <b>Бонус USDT</b>\n"
-            f"Получено: <b>+{money(amount)}</b>"
+            f"💸 Списано: <b>{money(price)}</b>\n"
+            "❌ Выпало: <b>Ничего</b>"
+        )
+
+    # Рандомный префикс вместо бонуса USDT.
+    if roll <= 80:
+        prefix = random.choice(CASE_PREFIXES)
+        set_user_prefix(user_id, prefix)
+        return True, (
+            "🎁 <b>Кейс открыт!</b>\n\n"
+            f"💸 Списано: <b>{money(price)}</b>\n"
+            "🔖 Награда: <b>Рандомный префикс</b>\n"
+            f"Префикс: <b>{html.escape(prefix)}</b>"
+        )
+
+    # Скидка на следующий кейс.
+    if roll <= 92:
+        set_case_discount(user_id, CASE_DISCOUNT_MILLI)
+        next_price = max(0, CASE_PRICE_MILLI - CASE_DISCOUNT_MILLI)
+        return True, (
+            "🎁 <b>Кейс открыт!</b>\n\n"
+            f"💸 Списано: <b>{money(price)}</b>\n"
+            "🏷 Награда: <b>Скидка на следующий кейс</b>\n"
+            f"Скидка: <b>{money(CASE_DISCOUNT_MILLI)}</b>\n"
+            f"Следующий кейс будет стоить: <b>{money(next_price)}</b>"
         )
 
     activate_luck_booster(user_id)
     return True, (
         "🎁 <b>Кейс открыт!</b>\n\n"
-        f"💸 Списано: <b>{money(CASE_PRICE_MILLI)}</b>\n"
+        f"💸 Списано: <b>{money(price)}</b>\n"
         "📈 Награда: <b>Бустер удачи</b>\n"
         "⏲ Длительность: <b>30 минут</b>\n"
         "Шанс редкой, эпической, легендарной и секретной роли повышен x2."
     )
+
+
+async def pay_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    register_user(update.effective_user)
+    remember_group(update.effective_chat)
+
+    if len(context.args) < 2:
+        await send_result(update, context, transfer_usage_text())
+        return
+
+    target = context.args[0]
+    amount = parse_money(context.args[1])
+
+    if amount is None or amount <= 0:
+        await send_result(update, context, "Введите сумму числом. Например: <code>/pay 123456789 1 подарок</code>")
+        return
+
+    comment = " ".join(context.args[2:]).strip() or "без комментария"
+
+    ok, msg, recipient_id = transfer_money(update.effective_user.id, target, amount, comment)
+
+    if not ok:
+        await send_result(update, context, "❌ " + msg)
+        return
+
+    sender_name = mention(update.effective_user)
+    await send_result(
+        update,
+        context,
+        "✅ <b>Перевод выполнен</b>\\n\\n"
+        f"💵 Сумма: <b>{money(amount)}</b>\\n"
+        f"👤 Получатель: <code>{html.escape(str(target))}</code>\\n"
+        f"💬 Комментарий: <b>{html.escape(comment)}</b>"
+    )
+
+    if recipient_id:
+        try:
+            await context.bot.send_message(
+                chat_id=recipient_id,
+                text=pe(
+                    "🎁 <b>Вам пришел перевод</b>\\n\\n"
+                    f"👤 От кого: {sender_name}\\n"
+                    f"💵 Сумма: <b>{money(amount)}</b>\\n"
+                    f"💬 Сообщение: <b>{html.escape(comment)}</b>"
+                ),
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
 
 
 async def case_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2227,11 +2542,8 @@ async def case_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context,
             "🎁 <b>Кейсы</b>\n\n"
             f"Цена открытия: <b>{money(CASE_PRICE_MILLI)}</b>\n"
-            "Команда: <code>/case open</code>\n\n"
-            "Награды:\n"
-            "💰 Бонус от <b>1</b> до <b>6 USDT</b>\n"
-            "📈 Бустер удачи на <b>30 минут</b>\n"
-            "🖤 Секретная награда с очень маленьким шансом"
+            f"Кулдаун: <b>{CASE_COOLDOWN_SECONDS} сек.</b>\n"
+            "Открыть кейс: <code>/case open</code>"
         )
         return
 
@@ -2762,6 +3074,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_result(update, context, profile_text(q.from_user.id))
         return
 
+    if data == 'transfer_money':
+        await q.answer()
+        await send_result(update, context, transfer_usage_text())
+        return
+
     if data == 'casino':
         await q.answer()
         await show_casino(update, context)
@@ -2874,6 +3191,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.message.reply_text(pe(groups_text()), parse_mode='HTML')
 
 def main():
+    print('VERSION_PAY_TRANSFER_REWARDS')
+    print('VERSION_CASE_COOLDOWN_30')
+    print('VERSION_SECRET_100X_RARER')
+    print('VERSION_CASE_HIDE_CONTENT')
+    print('VERSION_CASE_PREFIX_DISCOUNT')
     print('VERSION_UID_DIGITS_ONLY')
     print('VERSION_CASES_5USDT')
     print('VERSION_COIN_FIX_SAFE')
@@ -2903,6 +3225,7 @@ def main():
     app.add_handler(CommandHandler('promo', promo_cmd))
     app.add_handler(CommandHandler('casino', casino_cmd))
     app.add_handler(CommandHandler('case', case_cmd))
+    app.add_handler(CommandHandler('pay', pay_cmd))
     app.add_handler(CommandHandler('slots', slots_cmd))
     app.add_handler(CommandHandler('coin', coin_cmd))
     app.add_handler(CommandHandler('search', search_cmd))
