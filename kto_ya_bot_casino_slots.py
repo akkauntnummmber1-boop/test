@@ -1287,6 +1287,7 @@ def reply_main_menu(admin=False, group=False):
             ['💵 Передача денег', '🎰 Казино'],
             ['🎁 Промокод'],
             ['🏆 Топ 3'],
+            ['🏠 Главное меню'],
         ]
 
     return ReplyKeyboardMarkup(
@@ -2754,8 +2755,13 @@ async def send_ball_result_later(context: ContextTypes.DEFAULT_TYPE, chat_id: in
 
 def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
     is_hit = dice_value >= 4
-    headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🏀' if is_hit else f'Проигрыш <b>{money(bet_milli)}</b> в игре 🏀'
-    detail = 'Мяч попал в корзину!' if is_hit else 'Мяч не попал в корзину :('
+
+    if is_hit:
+        headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🏀'
+        detail = 'Мяч попал в корзину!'
+    else:
+        headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре 🏀'
+        detail = 'Мяч не попал в корзину :('
 
     return (
         '<b>Баскетбол</b>\n'
@@ -2840,11 +2846,12 @@ async def ball_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def football_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
     is_goal = dice_value >= 3
-    headline = f'Выигрыш <b>{money(win_milli)}</b> в игре ⚽️' if is_goal else f'Проигрыш <b>{money(bet_milli)}</b> в игре ⚽️'
 
     if is_goal:
+        headline = f'Выигрыш <b>{money(win_milli)}</b> в игре ⚽️'
         detail = 'ГОООЛ! Мяч в воротах!'
     else:
+        headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре ⚽️'
         detail = 'Мяч попал в штангу :(' if int(dice_value or 0) == 2 else 'Мяч не попал в ворота :('
 
     return (
@@ -3630,6 +3637,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_CANCEL_TO_MAIN_AND_FOOTBALL_TITLE_FIX')
     print('VERSION_GAME_HEADERS_FINAL_FIX')
     print('VERSION_MAIN_MENU_BUTTON_OPENS_SCREEN')
     print('VERSION_USDT_EMOJI_MENU_VISUAL_V2')
@@ -3690,8 +3698,8 @@ def main():
     app.add_handler(CommandHandler('search', search_cmd))
     app.add_handler(CommandHandler('dbpath', dbpath_cmd))
     app.add_handler(CommandHandler('adminstats', admin_stats_cmd))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(add_phrase_start, pattern='^add_phrase$')], states={WAIT_PHRASE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_phrase)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(withdraw_start, pattern='^withdraw$'), MessageHandler(filters.Regex('^(💸 )?Вывод 💸$'), withdraw_start_text)], states={WAIT_WALLET: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_wallet)], WAIT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(add_phrase_start, pattern='^add_phrase$')], states={WAIT_PHRASE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_phrase)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(withdraw_start, pattern='^withdraw$'), MessageHandler(filters.Regex('^(💸 )?Вывод 💸$'), withdraw_start_text)], states={WAIT_WALLET: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_wallet)], WAIT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
     app.add_handler(ConversationHandler(
         entry_points=[
             CallbackQueryHandler(promo_activate_start, pattern='^promo_activate$'),
@@ -3700,7 +3708,7 @@ def main():
         states={
             WAIT_PROMO_ACTIVATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, promo_activate_finish)],
         },
-        fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)],
+        fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)],
     ))
 
     app.add_handler(ConversationHandler(
@@ -3710,17 +3718,17 @@ def main():
             WAIT_PROMO_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, promo_create_amount)],
             WAIT_PROMO_LIMIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, promo_create_limit)],
         },
-        fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)],
+        fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)],
     ))
 
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(give_start, pattern='^give_usdt$')], states={WAIT_GIVE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, give_user)], WAIT_GIVE_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, give_amount)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(take_start, pattern='^take_usdt$')], states={WAIT_TAKE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_user)], WAIT_TAKE_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_amount)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(uid_start, pattern='^custom_uid$')], states={WAIT_UID_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, uid_user)], WAIT_UID_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, uid_value)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(hide_start, pattern='^hide_user$')], states={WAIT_HIDE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, hide_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(unhide_start, pattern='^unhide_user$')], states={WAIT_UNHIDE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, unhide_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(search_user_start, pattern='^search_user$'), MessageHandler(filters.Regex('^(🔎 )?Поиск по ID$'), search_user_start_text)], states={WAIT_SEARCH_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_user_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(delete_phrase_start, pattern='^delete_phrase_btn$')], states={WAIT_DELETE_PHRASE: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_phrase_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
-    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(broadcast_start, pattern='^broadcast$')], states={WAIT_BROADCAST_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Отмена$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(give_start, pattern='^give_usdt$')], states={WAIT_GIVE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, give_user)], WAIT_GIVE_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, give_amount)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(take_start, pattern='^take_usdt$')], states={WAIT_TAKE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_user)], WAIT_TAKE_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_amount)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(uid_start, pattern='^custom_uid$')], states={WAIT_UID_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, uid_user)], WAIT_UID_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, uid_value)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(hide_start, pattern='^hide_user$')], states={WAIT_HIDE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, hide_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(unhide_start, pattern='^unhide_user$')], states={WAIT_UNHIDE_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, unhide_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(search_user_start, pattern='^search_user$'), MessageHandler(filters.Regex('^(🔎 )?Поиск по ID$'), search_user_start_text)], states={WAIT_SEARCH_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_user_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(delete_phrase_start, pattern='^delete_phrase_btn$')], states={WAIT_DELETE_PHRASE: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_phrase_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
+    app.add_handler(ConversationHandler(entry_points=[CallbackQueryHandler(broadcast_start, pattern='^broadcast$')], states={WAIT_BROADCAST_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_finish)]}, fallbacks=[CommandHandler('cancel', cancel), MessageHandler(filters.Regex('^(❌ )?Главное меню$'), cancel)]))
     app.add_handler(CallbackQueryHandler(admin_stats_button, pattern='^admin_stats$'))
     app.add_handler(MessageHandler(filters.Document.ALL, txt_phrases_handler))
     app.add_handler(CallbackQueryHandler(buttons))
@@ -3964,17 +3972,21 @@ async def show_casino(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def slot_result_text(user, bet_milli: int, symbols: list[str], multiplier: float, win_milli: int, balance_after: int) -> str:
     combo = ' '.join(symbols)
+
     if win_milli > 0:
         headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🎰'
     else:
         headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре 🎰'
+
     return (
         '<b>Spins</b>\n'
         '🎰\n'
+        f'{mention(user)}\n'
         f'{headline}\n'
         f'Комбинация: <b>{combo}</b>\n\n'
-        f'💵 Баланс <b>{money_balance(balance_after)}</b>'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
+
 
 
 def coin_result_text(user, bet_milli: int, choice: str, result: str, win_milli: int, balance_after: int) -> str:
@@ -3997,15 +4009,23 @@ def coin_result_text(user, bet_milli: int, choice: str, result: str, win_milli: 
 
 def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
     is_hit = dice_value >= 4
-    headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🏀' if is_hit else f'Проигрыш <b>{money(bet_milli)}</b> в игре 🏀'
-    detail = 'Мяч попал в корзину!' if is_hit else 'Мяч не попал в корзину :('
+
+    if is_hit:
+        headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🏀'
+        detail = 'Мяч попал в корзину!'
+    else:
+        headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре 🏀'
+        detail = 'Мяч не попал в корзину :('
+
     return (
-        '<b>Spins</b>\n'
+        '<b>Баскетбол</b>\n'
         '🏀\n'
+        f'{mention(user)}\n'
         f'{headline}\n\n'
         f'{detail}\n\n'
-        f'💵 Баланс <b>{money_balance(balance_after)}</b>'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
+
 
 
 async def send_ball_result_later(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int):
@@ -4021,18 +4041,23 @@ async def send_ball_result_later(context: ContextTypes.DEFAULT_TYPE, chat_id: in
 
 def football_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
     is_goal = dice_value >= 3
-    headline = f'Выигрыш <b>{money(win_milli)}</b> в игре ⚽️' if is_goal else f'Проигрыш <b>{money(bet_milli)}</b> в игре ⚽️'
+
     if is_goal:
+        headline = f'Выигрыш <b>{money(win_milli)}</b> в игре ⚽️'
         detail = 'ГОООЛ! Мяч в воротах!'
     else:
+        headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре ⚽️'
         detail = 'Мяч попал в штангу :(' if int(dice_value or 0) == 2 else 'Мяч не попал в ворота :('
+
     return (
-        '<b>Spins</b>\n'
+        '<b>Футбол</b>\n'
         '⚽️\n'
+        f'{mention(user)}\n'
         f'{headline}\n\n'
         f'{detail}\n\n'
-        f'💵 Баланс <b>{money_balance(balance_after)}</b>'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
+
 
 
 async def send_football_result_later(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int):
