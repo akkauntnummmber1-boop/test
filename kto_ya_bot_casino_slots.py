@@ -3616,6 +3616,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_START_HELLO_THEN_INLINE_MENU')
     print('VERSION_NO_TECH_KEYBOARD_MESSAGE')
     print('VERSION_HIDE_KEYBOARD_REFRESH_MESSAGE')
     print('VERSION_RESTORE_BOTTOM_KEYBOARD')
@@ -3807,6 +3808,10 @@ def get_withdrawn_total(user_id: int) -> int:
     with db() as conn:
         row = conn.execute("SELECT COALESCE(SUM(amount_milli),0) FROM withdrawals WHERE user_id=? AND status='approved'", (user_id,)).fetchone()
         return int(row[0] or 0) if row else 0
+
+
+def hello_keyboard_text() -> str:
+    return "👤 <b>Привет!</b>"
 
 
 def main_dashboard_text() -> str:
@@ -4088,9 +4093,15 @@ async def open_main_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text(
-        pe(main_dashboard_text()),
+        pe(hello_keyboard_text()),
         parse_mode='HTML',
         reply_markup=reply_main_menu(is_admin(update.effective_user.id), group=False)
+    )
+
+    await update.message.reply_text(
+        pe(main_dashboard_text()),
+        parse_mode='HTML',
+        reply_markup=dashboard_message_menu()
     )
 
 
