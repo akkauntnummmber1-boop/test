@@ -1533,8 +1533,7 @@ async def play_slots(update: Update, context: ContextTypes.DEFAULT_TYPE, bet_mil
     await send_clean_group_result(
         update,
         context,
-        slot_result_text(user, bet_milli, symbols, multiplier, win_milli, balance_after),
-        reply_markup=slots_menu()
+        slot_result_text(user, bet_milli, symbols, multiplier, win_milli, balance_after)
     )
 
 
@@ -1707,8 +1706,7 @@ async def play_coin(update: Update, context: ContextTypes.DEFAULT_TYPE, side: st
     await send_clean_group_result(
         update,
         context,
-        coin_result_text(user, bet_milli, side, result, win_milli, balance_after),
-        reply_markup=coin_menu()
+        coin_result_text(user, bet_milli, side, result, win_milli, balance_after)
     )
 
 
@@ -3191,6 +3189,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.message.reply_text(pe(groups_text()), parse_mode='HTML')
 
 def main():
+    print('VERSION_GAME_RESULT_NO_BUTTONS')
     print('VERSION_PAY_TEXT_FIX')
     print('VERSION_PAY_TRANSFER_REWARDS')
     print('VERSION_CASE_COOLDOWN_30')
