@@ -1525,7 +1525,6 @@ def slot_result_text(user, bet_milli: int, symbols: list[str], multiplier: float
 
     return (
         '<b>Spins</b>\n'
-        '🎰\n'
         f'{mention(user)}\n'
         f'{headline}\n'
         f'Комбинация: <b>{combo}</b>\n\n'
@@ -1712,24 +1711,20 @@ def roll_coin(user_id: int | None = None) -> str:
 
 
 def coin_result_text(user, bet_milli: int, choice: str, result: str, win_milli: int, balance_after: int) -> str:
-    win = choice == result
+    won = choice == result
 
-    if win:
-        status = "Угадал"
-        result_line = f"+{money(win_milli)}"
+    if won:
+        headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🪙'
     else:
-        status = "Не угадал"
-        result_line = f"-{money(bet_milli)}"
+        headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре 🪙'
 
     return (
-        "🪙 <b>Орел / Решка</b>\n\n"
-        f"{mention(user)}\n"
-        f"Выбор: <b>{coin_side_label(choice)}</b>\n"
-        f"Выпало: <b>{coin_side_label(result)}</b>\n"
-        f"Ставка: <b>{money(bet_milli)}</b>\n"
-        f"Результат: <b>{status}</b>\n"
-        f"Итог: <b>{result_line}</b>\n\n"
-        f"Баланс: <b>{money_balance(balance_after)}</b>"
+        '<b>Орел / Решка</b>\n'
+        f'{mention(user)}\n'
+        f'{headline}\n'
+        f'Ваш выбор: <b>{coin_side_label(choice)}</b>\n'
+        f'Выпало: <b>{coin_side_label(result)}</b>\n\n'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
 
 
@@ -2946,7 +2941,12 @@ async def case_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     ok, msg = open_case(update.effective_user.id)
-    await send_result(update, context, ("✅ " if ok else "❌ ") + msg)
+    prefix = "✅ " if ok else "❌ "
+    await send_result(
+        update,
+        context,
+        prefix + f"{mention(update.effective_user)}\n" + msg
+    )
 
 
 async def casino_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3616,6 +3616,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_CASE_MENTION_COIN_VISUAL_FIX')
     print('VERSION_START_HELLO_THEN_INLINE_MENU')
     print('VERSION_NO_TECH_KEYBOARD_MESSAGE')
     print('VERSION_HIDE_KEYBOARD_REFRESH_MESSAGE')
@@ -3975,7 +3976,6 @@ def slot_result_text(user, bet_milli: int, symbols: list[str], multiplier: float
 
     return (
         '<b>Spins</b>\n'
-        '🎰\n'
         f'{mention(user)}\n'
         f'{headline}\n'
         f'Комбинация: <b>{combo}</b>\n\n'
@@ -3986,20 +3986,21 @@ def slot_result_text(user, bet_milli: int, symbols: list[str], multiplier: float
 
 def coin_result_text(user, bet_milli: int, choice: str, result: str, win_milli: int, balance_after: int) -> str:
     won = choice == result
+
     if won:
         headline = f'Выигрыш <b>{money(win_milli)}</b> в игре 🪙'
-        result_line = f'Выпало: <b>{coin_side_label(result)}</b>'
     else:
         headline = f'Проигрыш <b>{money(bet_milli)}</b> в игре 🪙'
-        result_line = f'Выпало: <b>{coin_side_label(result)}</b>'
+
     return (
-        '<b>Spins</b>\n'
-        '🪙\n'
+        '<b>Орел / Решка</b>\n'
+        f'{mention(user)}\n'
         f'{headline}\n'
         f'Ваш выбор: <b>{coin_side_label(choice)}</b>\n'
-        f'{result_line}\n\n'
-        f'💵 Баланс <b>{money_balance(balance_after)}</b>'
+        f'Выпало: <b>{coin_side_label(result)}</b>\n\n'
+        f'💸 Баланс <b>{money_balance(balance_after)}</b>'
     )
+
 
 
 def ball_result_text(user, bet_milli: int, dice_value: int, win_milli: int, balance_after: int) -> str:
