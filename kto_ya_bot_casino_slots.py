@@ -3623,6 +3623,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_CLAN_MENU_INLINE_FIX')
     print('VERSION_CLAN_ADMIN_COMMANDS')
     print('VERSION_CLANS_SYSTEM')
     print('VERSION_CASINO_5_SEC_COOLDOWN')
@@ -7803,6 +7804,356 @@ async def clandelete_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ===== END FINAL CLAN ADMIN COMMANDS =====
+
+
+# ===== FINAL CLAN_MENU_INLINE_FIX =====
+
+def reply_main_menu(admin=False, group=False):
+    if group:
+        rows = []
+    else:
+        rows = [
+            ['🎭 Кто я', '🎮 Играть'],
+            ['👤 Профиль', '🏆 Топ 3'],
+            ['👏 Ежедневный EXP', '🎁 Промокод'],
+            ['💵 Передача денег', '🏠 Главное меню'],
+        ]
+
+    return ReplyKeyboardMarkup(
+        rows,
+        resize_keyboard=True,
+        is_persistent=True,
+        input_field_placeholder='Выберите действие...'
+    )
+
+
+def dashboard_message_menu():
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton('👤 Профиль', callback_data='profile'),
+            InlineKeyboardButton('📊 Статистика', callback_data='profile_stats'),
+        ],
+        [
+            InlineKeyboardButton('🏰 Кланы', callback_data='clans'),
+            InlineKeyboardButton('👏 Ежедневный EXP', callback_data='daily_exp'),
+        ],
+        [
+            InlineKeyboardButton('💸 Вывести', callback_data='withdraw'),
+            InlineKeyboardButton('👥 Группа', url='https://t.me/bezdnao'),
+        ],
+    ])
+
+
+def clan_menu_text(user_id: int) -> str:
+    row = get_user_clan(user_id)
+
+    if not row:
+        return (
+            "🏰 <b>Кланы</b>\n\n"
+            "Создай свой клан или вступи в уже существующий.\n\n"
+            "Команды:\n"
+            "<code>клан создать TAG</code>\n"
+            "<code>клан создать TAG закрытый</code>\n"
+            "<code>войти в клан TAG</code>\n"
+            "<code>покинуть клан</code>\n"
+            "<code>клан топ 3</code>\n\n"
+            f"Ник клана: <b>{CLAN_MIN_NAME}-{CLAN_MAX_NAME}</b> символов."
+        )
+
+    clan_id, name, owner_id, is_closed, exp, balance, created_at, role, joined_at = row
+    status = '🔒 закрытый' if int(is_closed or 0) else '🔓 открытый'
+    role_text = '👑 владелец' if role == 'owner' else '👤 участник'
+
+    return (
+        "🏰 <b>Мой клан</b>\n\n"
+        f"Название: <b>{html.escape(name)}</b>\n"
+        f"ID: <code>{clan_id}</code>\n"
+        f"Статус: <b>{status}</b>\n"
+        f"Роль: <b>{role_text}</b>\n"
+        f"Участников: <b>{clan_member_count(clan_id)}</b>"
+    )
+
+
+def clan_top3_text() -> str:
+    ensure_clan_tables()
+
+    with db() as conn:
+        rows = conn.execute(
+            """
+            SELECT c.clan_id, c.name, c.owner_id, c.is_closed, COUNT(m.user_id) AS members
+            FROM clans c
+            LEFT JOIN clan_members m ON m.clan_id=c.clan_id
+            GROUP BY c.clan_id
+            ORDER BY members DESC, c.created_at ASC
+            LIMIT 3
+            """
+        ).fetchall()
+
+    if not rows:
+        return "🏆 <b>Топ 3 кланов</b>\n\nКланов пока нет."
+
+    medals = ["🥇", "🥈", "🥉"]
+    lines = ["🏆 <b>Топ 3 кланов</b>\n\nРейтинг считается по количеству участников."]
+
+    for i, row in enumerate(rows):
+        clan_id, name, owner_id, is_closed, members = row
+        status = '🔒' if int(is_closed or 0) else '🔓'
+        lines.append(
+            f"{medals[i]} {status} <b>{html.escape(str(name))}</b>\n"
+            f"ID: <code>{clan_id}</code> · Участников: <b>{int(members or 0)}</b>"
+        )
+
+    return "\n\n".join(lines)
+
+
+def all_clans_text() -> str:
+    ensure_clan_tables()
+
+    with db() as conn:
+        rows = conn.execute(
+            """
+            SELECT c.clan_id, c.name, c.owner_id, c.is_closed, c.created_at,
+                   COUNT(m.user_id) AS members
+            FROM clans c
+            LEFT JOIN clan_members m ON m.clan_id=c.clan_id
+            GROUP BY c.clan_id
+            ORDER BY members DESC, c.clan_id ASC
+            """
+        ).fetchall()
+
+    if not rows:
+        return "🏰 <b>Все кланы</b>\n\nКланов пока нет."
+
+    lines = [f"🏰 <b>Все кланы</b>\n\nВсего: <b>{len(rows)}</b>"]
+
+    for clan_id, name, owner_id, is_closed, created_at, members in rows:
+        status = "🔒 закрытый" if int(is_closed or 0) else "🔓 открытый"
+        lines.append(
+            f"<b>{html.escape(str(name))}</b> · ID: <code>{clan_id}</code>\n"
+            f"👑 Владелец: <code>{owner_id}</code>\n"
+            f"Статус: <b>{status}</b>\n"
+            f"Участников: <b>{int(members or 0)}</b>"
+        )
+
+    return "\n\n".join(lines)
+
+
+async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    data = q.data or ''
+
+    register_user(q.from_user)
+
+    if q.message:
+        remember_group(q.message.chat)
+
+    if data == 'profile':
+        await q.answer()
+        if q.message.chat.type != 'private':
+            await q.message.reply_text(pe('👤 Профиль доступен только в личке с ботом.'), parse_mode='HTML')
+            return
+
+        await q.edit_message_text(
+            pe(profile_text(q.from_user.id)),
+            parse_mode='HTML',
+            reply_markup=profile_actions_menu()
+        )
+        return
+
+    if data in ('profile_stats', 'stats'):
+        await q.answer()
+        if q.message.chat.type != 'private':
+            await q.message.reply_text(pe('📊 Статистика доступна только в личке с ботом.'), parse_mode='HTML')
+            return
+
+        await q.edit_message_text(
+            pe(profile_stats_text(q.from_user.id)),
+            parse_mode='HTML',
+            reply_markup=stats_actions_menu()
+        )
+        return
+
+    if data == 'daily_exp':
+        await q.answer()
+        ok, msg = claim_daily_exp(q.from_user.id)
+        await q.message.reply_text(pe(('✅ ' if ok else '⏱ ') + msg), parse_mode='HTML')
+        return
+
+    if data == 'clans':
+        await q.answer()
+        await q.message.reply_text(
+            pe(clan_menu_text(q.from_user.id)),
+            parse_mode='HTML',
+            reply_markup=clan_menu_keyboard(q.from_user.id)
+        )
+        return
+
+    if data == 'clan_create_help':
+        await q.answer()
+        await q.message.reply_text(
+            pe(
+                "🏰 <b>Создать клан</b>\n\n"
+                "<code>клан создать TAG</code>\n"
+                "<code>клан создать TAG закрытый</code>\n\n"
+                "Ник: <b>3-6</b> символов."
+            ),
+            parse_mode='HTML'
+        )
+        return
+
+    if data == 'clan_join_help':
+        await q.answer()
+        await q.message.reply_text(
+            pe("🚪 <b>Войти в клан</b>\n\n<code>войти в клан TAG</code>\n<code>клан войти TAG</code>"),
+            parse_mode='HTML'
+        )
+        return
+
+    if data in ('clan_leave', 'clan_leave_help'):
+        await q.answer()
+        ok, msg = leave_clan(q.from_user.id)
+        await q.message.reply_text(pe(('✅ ' if ok else '❌ ') + msg), parse_mode='HTML')
+        return
+
+    if data == 'clan_top3':
+        await q.answer()
+        await q.message.reply_text(pe(clan_top3_text()), parse_mode='HTML')
+        return
+
+    if data == 'clan_my':
+        await q.answer()
+        await q.message.reply_text(
+            pe(clan_menu_text(q.from_user.id)),
+            parse_mode='HTML',
+            reply_markup=clan_menu_keyboard(q.from_user.id)
+        )
+        return
+
+    if data == 'clan_toggle':
+        await q.answer()
+        ok, msg = toggle_clan_closed(q.from_user.id)
+        await q.message.reply_text(pe(('✅ ' if ok else '❌ ') + msg), parse_mode='HTML')
+        return
+
+    if data == 'back':
+        await q.answer()
+        if is_group(q.message.chat):
+            await q.edit_message_text(
+                pe('Главное меню:'),
+                parse_mode='HTML',
+                reply_markup=main_menu(is_admin(q.from_user.id), group=True)
+            )
+        else:
+            await q.edit_message_text(
+                pe(main_dashboard_text()),
+                parse_mode='HTML',
+                reply_markup=dashboard_message_menu()
+            )
+        return
+
+    if data == 'casino':
+        await q.answer()
+        await show_casino(update, context)
+        return
+
+    if data == 'whoami':
+        await q.answer()
+        await send_role(update, context)
+        return
+
+    if data == 'top3':
+        await q.answer()
+        await send_clean_group_result(update, context, top_text())
+        return
+
+    if data == 'transfer_money':
+        await q.answer()
+        await send_result(update, context, transfer_usage_text())
+        return
+
+    if data == 'withdraw':
+        await q.answer()
+        try:
+            await withdraw_start(update, context)
+        except Exception:
+            await q.message.reply_text(
+                pe('💸 <b>Функция временно недоступна.</b>\n<b>Пожалуйста, вернитесь через 48 часов.</b>'),
+                parse_mode='HTML'
+            )
+        return
+
+    if data == 'promo_list':
+        await q.answer()
+        if not is_admin(q.from_user.id):
+            await q.message.reply_text(pe('⛔ У тебя нет доступа.'), parse_mode='HTML')
+            return
+        await q.message.reply_text(pe(promo_codes_text()), parse_mode='HTML')
+        return
+
+    if data.startswith('slots_bet:') or data.startswith('coin_bet:') or data in ('slots', 'coin'):
+        await q.answer()
+        await q.message.reply_text(pe(OLD_CASINO_GAME_DISABLED_TEXT), parse_mode='HTML')
+        return
+
+    if data.startswith('repeat:'):
+        await q.answer()
+        parts = data.split(':')
+        game = parts[1] if len(parts) > 1 else ''
+
+        if game in ('slots', 'coin'):
+            await q.message.reply_text(pe(OLD_CASINO_GAME_DISABLED_TEXT), parse_mode='HTML')
+            return
+
+        try:
+            if game == 'ball' and len(parts) == 3:
+                context.args = [str(int(parts[2]) / 1000)]
+                return await ball_cmd(update, context)
+
+            if game == 'football' and len(parts) == 3:
+                context.args = [str(int(parts[2]) / 1000)]
+                return await football_cmd(update, context)
+
+            if game == 'cube' and len(parts) == 4:
+                sides = parts[2].split(',')
+                context.args = sides + [str(int(parts[3]) / 1000)]
+                return await cube_cmd(update, context)
+
+        except Exception:
+            await q.message.reply_text(pe('❌ Не удалось повторить игру.'), parse_mode='HTML')
+            return
+
+    if data.startswith('wd_ok:') or data.startswith('wd_no:'):
+        try:
+            return await _previous_buttons_for_clans(update, context)
+        except Exception:
+            await q.answer()
+            return
+
+    try:
+        return await _previous_buttons_for_clans(update, context)
+    except Exception:
+        await q.answer()
+
+
+_previous_trigger_for_clan_menu_inline_fix = trigger
+
+async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message and update.message.text:
+        register_user(update.effective_user)
+        remember_group(update.effective_chat)
+
+        # Кнопки в нижней клавиатуре.
+        if update.message.text.strip().lower() in ('кланы', '🏰 кланы'):
+            await show_clans(update, context)
+            return
+
+        # Клановые команды.
+        if await clan_command_text(update, context, update.message.text):
+            return
+
+    return await _previous_trigger_for_clan_menu_inline_fix(update, context)
+
+# ===== END FINAL CLAN_MENU_INLINE_FIX =====
 
 if __name__ == '__main__':
     main()
