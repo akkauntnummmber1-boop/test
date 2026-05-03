@@ -3634,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_ADD_NAME_SQL_SAFE_FIX')
     print('VERSION_ADD_CREATED_AT_FIX')
     print('VERSION_ADD_CONVERSATION_HANDLER_FIX')
     print('VERSION_ADD_DESCRIPTION_STEP_FIX')
@@ -9175,5 +9176,107 @@ async def add_name_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ===== END_FINAL_ADD_CREATED_AT_AND_CLEAN_HANDLERS =====
- if __name__ == '__main__':
+
+
+# ===== FINAL_ADD_NAME_SQL_SAFE_FIX =====
+
+def insert_phrase_safe(text_value: str, rarity: str, photo_file_id: str | None = None, description: str | None = None):
+    """
+    Безопасная вставка роли в phrases.
+    Заполняет только те колонки, которые реально есть в базе.
+    created_at заполняется, если колонка существует.
+    """
+    ensure_phrase_photo_columns_final()
+
+    with db() as conn:
+        phrase_cols = columns(conn, 'phrases')
+
+        values_by_col = {
+            'text': text_value,
+            'rarity': rarity,
+            'photo_file_id': photo_file_id,
+            'description': description or text_value,
+            'created_at': ts(),
+        }
+
+        insert_cols = []
+        insert_values = []
+
+        for col in ('text', 'rarity', 'photo_file_id', 'description', 'created_at'):
+            if col in phrase_cols:
+                insert_cols.append(col)
+                insert_values.append(values_by_col[col])
+
+        if 'text' not in insert_cols:
+            raise RuntimeError("phrases table has no text column")
+
+        placeholders = ', '.join(['?'] * len(insert_cols))
+        sql = f"INSERT INTO phrases ({', '.join(insert_cols)}) VALUES ({placeholders})"
+        conn.execute(sql, tuple(insert_values))
+        conn.commit()
+
+
+async def add_name_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    raw = (update.message.text or '').strip()
+
+    if raw.lower() in ('отменить', 'отмена', 'cancel', '/cancel'):
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    if not raw:
+        await update.message.reply_text(
+            pe('❌ Название не может быть пустым.\n\nЧтобы отменить, напиши: <b>Отменить</b>'),
+            parse_mode='HTML'
+        )
+        return ADD_NAME
+
+    data = context.user_data.get('photo_role_add') or {}
+    photo_file_id = data.get('photo_file_id')
+    rarity = data.get('rarity')
+
+    if not photo_file_id or not rarity:
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Сессия добавления сломалась. Запусти /add заново.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    try:
+        insert_phrase_safe(raw, rarity, photo_file_id, raw)
+    except Exception as e:
+        await update.message.reply_text(
+            pe(f'❌ Не удалось добавить роль.\nОшибка: <code>{html.escape(str(e))}</code>'),
+            parse_mode='HTML'
+        )
+        return ADD_NAME
+
+    context.user_data.pop('photo_role_add', None)
+    rarity_label = RARITY_LABELS.get(rarity, rarity)
+
+    try:
+        await update.message.reply_photo(
+            photo=photo_file_id,
+            caption=pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(raw)}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(raw)}</b>"
+            ),
+            parse_mode='HTML'
+        )
+    except Exception:
+        await update.message.reply_text(
+            pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(raw)}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(raw)}</b>"
+            ),
+            parse_mode='HTML'
+        )
+
+    return ConversationHandler.END
+
+# ===== END_FINAL_ADD_NAME_SQL_SAFE_FIX =====
+
+if __name__ == '__main__':
     main()
