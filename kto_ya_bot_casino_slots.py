@@ -3634,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_PHOTO_ADD_HANDLER_FIX')
     print('VERSION_PHOTO_ROLES_ADD_RESETFRAZ')
     print('VERSION_CLAN_PREMIUM_EMOJI_PACK')
     print('VERSION_CLAN_MENU_INLINE_FIX')
@@ -3763,6 +3764,8 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_stats_button, pattern='^admin_stats$'))
     app.add_handler(MessageHandler(filters.Document.ALL, txt_phrases_handler))
     app.add_handler(CallbackQueryHandler(buttons))
+    app.add_handler(MessageHandler(filters.PHOTO, photo_add_handler))
+    app.add_handler(MessageHandler(filters.Document.IMAGE, document_photo_hint_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, trigger))
     logger.info('Бот запущен')
     app.run_polling()
@@ -8414,6 +8417,28 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await _previous_trigger_for_photo_roles(update, context)
 
 # ===== END FINAL PHOTO_ROLES_ADD_RESETFRAZ =====
+
+
+
+async def document_photo_hint_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = context.user_data.get('photo_role_add')
+    if data and data.get('state') == PHOTO_ADD_STATE_PHOTO:
+        await update.message.reply_text(
+            pe('❌ Отправь изображение именно как <b>фото</b>, не как файл.'),
+            parse_mode='HTML'
+        )
+
+# ===== FINAL PHOTO_HANDLER_REGISTER_FIX =====
+
+async def photo_add_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message and update.message.photo:
+        if await photo_role_receive_photo(update, context):
+            return
+
+    # Если фото пришло не в процессе /add, просто игнорируем.
+    return
+
+# ===== END FINAL PHOTO_HANDLER_REGISTER_FIX =====
 
 if __name__ == '__main__':
     main()
