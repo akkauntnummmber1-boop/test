@@ -3634,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_ADD_CONVERSATION_HANDLER_FIX')
     print('VERSION_ADD_DESCRIPTION_STEP_FIX')
     print('VERSION_ADD_CANCEL_TEXT_ONLY_LOGS')
     print('VERSION_ADD_NO_CONFIRM')
@@ -3698,12 +3699,28 @@ def main():
     print('VERSION_ADMIN_FIX')
     init_db()
     app = Application.builder().token(BOT_TOKEN).defaults(Defaults(parse_mode="HTML")).build()
-    app.add_handler(MessageHandler(filters.PHOTO, photo_add_photo_priority_handler), group=-1)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, photo_add_text_priority_handler), group=-1)
+    app.add_handler(ConversationHandler(
+        entry_points=[CommandHandler('add', add_photo_role_start)],
+        states={
+            ADD_PHOTO: [
+                MessageHandler(filters.PHOTO, add_photo_step),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, add_photo_step),
+                MessageHandler(filters.Document.IMAGE, add_photo_step),
+            ],
+            ADD_RARITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_rarity_step)],
+            ADD_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_name_step)],
+        },
+        fallbacks=[
+            CommandHandler('cancel', add_cancel_conv),
+            MessageHandler(filters.Regex('^(Отменить|отменить|отмена|cancel)$'), add_cancel_conv),
+        ],
+        name='photo_role_add_conversation',
+        persistent=False,
+    ))
+
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('admin', admin_cmd))
     app.add_handler(CommandHandler('resetfraz', resetfraz_cmd))
-    app.add_handler(CommandHandler('add', add_photo_role_start))
     app.add_handler(CommandHandler('allclans', allclans_cmd))
     app.add_handler(CommandHandler('clandelete', clandelete_cmd))
     app.add_handler(CommandHandler('startchat', startchat_cmd))
@@ -3774,7 +3791,6 @@ def main():
     app.add_handler(CallbackQueryHandler(buttons))
     app.add_handler(MessageHandler(filters.PHOTO, photo_add_handler))
     app.add_handler(MessageHandler(filters.Document.IMAGE, document_photo_hint_handler))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, photo_add_text_handler), group=-1)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, trigger))
     logger.info('Бот запущен')
     app.run_polling()
@@ -8890,6 +8906,186 @@ async def photo_add_photo_priority_handler(update: Update, context: ContextTypes
 
 
 # ===== END_FINAL_ADD_DESCRIPTION_STEP_FIX =====
+
+
+# ===== FINAL_ADD_CONVERSATION_HANDLER_FIX =====
+
+ADD_PHOTO, ADD_RARITY, ADD_NAME = range(9000, 9003)
+
+RARITY_INPUT_MAP_FINAL = {
+    'обычная': 'common', 'обычный': 'common', 'common': 'common',
+    'редкая': 'rare', 'редкий': 'rare', 'rare': 'rare',
+    'эпическая': 'epic', 'эпик': 'epic', 'epic': 'epic',
+    'легендарная': 'legendary', 'легенда': 'legendary', 'legendary': 'legendary',
+    'секретная': 'secret', 'секретный': 'secret', 'secret': 'secret',
+}
+
+
+def ensure_phrase_photo_columns_final():
+    with db() as conn:
+        phrase_cols = columns(conn, 'phrases')
+        if 'photo_file_id' not in phrase_cols:
+            conn.execute("ALTER TABLE phrases ADD COLUMN photo_file_id TEXT")
+        if 'description' not in phrase_cols:
+            conn.execute("ALTER TABLE phrases ADD COLUMN description TEXT")
+        conn.commit()
+
+
+async def add_photo_role_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text(pe('⛔ У тебя нет доступа.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    ensure_phrase_photo_columns_final()
+    context.user_data['photo_role_add'] = {}
+
+    await update.message.reply_text(
+        pe(
+            '🖼 <b>Добавление роли с фото</b>\n\n'
+            'Отправь фото роли.\n\n'
+            'Чтобы отменить добавление, напиши: <b>Отменить</b>'
+        ),
+        parse_mode='HTML'
+    )
+    return ADD_PHOTO
+
+
+async def add_photo_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message and update.message.text and update.message.text.strip().lower() in ('отменить', 'отмена', 'cancel', '/cancel'):
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    if not update.message or not update.message.photo:
+        await update.message.reply_text(
+            pe('❌ Отправь изображение именно как <b>фото</b>.\n\nЧтобы отменить, напиши: <b>Отменить</b>'),
+            parse_mode='HTML'
+        )
+        return ADD_PHOTO
+
+    context.user_data['photo_role_add'] = {
+        'photo_file_id': update.message.photo[-1].file_id
+    }
+
+    await update.message.reply_text(
+        pe(
+            "Выбери редкость роли одним сообщением:\n\n"
+            "🩶 обычная\n"
+            "💚 редкая\n"
+            "🩷 эпическая\n"
+            "💛 легендарная\n"
+            "🖤 секретная\n\n"
+            "Чтобы отменить добавление, напиши: <b>Отменить</b>"
+        ),
+        parse_mode='HTML'
+    )
+    return ADD_RARITY
+
+
+async def add_rarity_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    raw = (update.message.text or '').strip()
+    low = raw.lower()
+
+    if low in ('отменить', 'отмена', 'cancel', '/cancel'):
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    rarity = RARITY_INPUT_MAP_FINAL.get(low)
+    if not rarity:
+        await update.message.reply_text(
+            pe(
+                "❌ Такой редкости нет.\n\n"
+                "Напиши одну из редкостей:\n"
+                "обычная, редкая, эпическая, легендарная, секретная\n\n"
+                "Чтобы отменить добавление, напиши: <b>Отменить</b>"
+            ),
+            parse_mode='HTML'
+        )
+        return ADD_RARITY
+
+    data = context.user_data.get('photo_role_add', {})
+    data['rarity'] = rarity
+    context.user_data['photo_role_add'] = data
+
+    await update.message.reply_text(
+        pe(
+            '📖 Теперь отправь название/описание роли одним сообщением.\n\n'
+            'После этого роль сразу добавится.\n\n'
+            'Чтобы отменить добавление, напиши: <b>Отменить</b>'
+        ),
+        parse_mode='HTML'
+    )
+    return ADD_NAME
+
+
+async def add_name_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    raw = (update.message.text or '').strip()
+
+    if raw.lower() in ('отменить', 'отмена', 'cancel', '/cancel'):
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    if not raw:
+        await update.message.reply_text(
+            pe('❌ Название не может быть пустым.\n\nЧтобы отменить, напиши: <b>Отменить</b>'),
+            parse_mode='HTML'
+        )
+        return ADD_NAME
+
+    data = context.user_data.get('photo_role_add') or {}
+    photo_file_id = data.get('photo_file_id')
+    rarity = data.get('rarity')
+
+    if not photo_file_id or not rarity:
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Сессия добавления сломалась. Запусти /add заново.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    ensure_phrase_photo_columns_final()
+    with db() as conn:
+        conn.execute(
+            "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
+            (raw, rarity, photo_file_id, raw),
+        )
+        conn.commit()
+
+    context.user_data.pop('photo_role_add', None)
+    rarity_label = RARITY_LABELS.get(rarity, rarity)
+
+    try:
+        await update.message.reply_photo(
+            photo=photo_file_id,
+            caption=pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(raw)}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(raw)}</b>"
+            ),
+            parse_mode='HTML'
+        )
+    except Exception:
+        await update.message.reply_text(
+            pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(raw)}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(raw)}</b>"
+            ),
+            parse_mode='HTML'
+        )
+
+    return ConversationHandler.END
+
+
+async def add_cancel_conv(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.pop('photo_role_add', None)
+    await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+    return ConversationHandler.END
+
+
+# ===== END_FINAL_ADD_CONVERSATION_HANDLER_FIX =====
 
 if __name__ == '__main__':
     main()
