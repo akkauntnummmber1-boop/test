@@ -3634,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_ADD_DESCRIPTION_STEP_FIX')
     print('VERSION_ADD_CANCEL_TEXT_ONLY_LOGS')
     print('VERSION_ADD_NO_CONFIRM')
     print('VERSION_TOKEN_UPDATED_8210062279')
@@ -3697,6 +3698,8 @@ def main():
     print('VERSION_ADMIN_FIX')
     init_db()
     app = Application.builder().token(BOT_TOKEN).defaults(Defaults(parse_mode="HTML")).build()
+    app.add_handler(MessageHandler(filters.PHOTO, photo_add_photo_priority_handler), group=-1)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, photo_add_text_priority_handler), group=-1)
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('admin', admin_cmd))
     app.add_handler(CommandHandler('resetfraz', resetfraz_cmd))
@@ -8849,6 +8852,44 @@ async def send_role_log(context: ContextTypes.DEFAULT_TYPE, user, phrase: str, r
         pass
 
 # ===== END_FINAL_ADD_CANCEL_AND_TEXT_LOGS =====
+
+
+# ===== FINAL_ADD_DESCRIPTION_STEP_FIX =====
+
+async def photo_add_text_priority_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Ловит текстовые шаги /add до обычного trigger.
+    Особенно важен шаг названия/описания роли.
+    """
+    if not update.message or not update.message.text:
+        return
+
+    data = context.user_data.get('photo_role_add')
+    if not data:
+        return
+
+    handled = await photo_role_receive_text(update, context)
+    if handled:
+        raise ApplicationHandlerStop
+
+
+async def photo_add_photo_priority_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Ловит фото для /add до обычных обработчиков.
+    """
+    if not update.message or not update.message.photo:
+        return
+
+    data = context.user_data.get('photo_role_add')
+    if not data:
+        return
+
+    handled = await photo_role_receive_photo(update, context)
+    if handled:
+        raise ApplicationHandlerStop
+
+
+# ===== END_FINAL_ADD_DESCRIPTION_STEP_FIX =====
 
 if __name__ == '__main__':
     main()
