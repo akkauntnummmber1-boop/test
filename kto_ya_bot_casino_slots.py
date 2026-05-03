@@ -3634,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_INDENT_RUNNER_FIX')
     print('VERSION_ADD_NAME_SQL_SAFE_FIX')
     print('VERSION_ADD_CREATED_AT_FIX')
     print('VERSION_ADD_CONVERSATION_HANDLER_FIX')
@@ -9274,9 +9275,7 @@ async def add_name_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='HTML'
         )
 
-    return ConversationHandler.END
-
-# ===== END_FINAL_ADD_NAME_SQL_SAFE_FIX =====
+    # ===== END_FINAL_ADD_NAME_SQL_SAFE_FIX =====
 
 if __name__ == '__main__':
     main()
