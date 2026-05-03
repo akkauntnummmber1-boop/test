@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.error import BadRequest
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, Defaults, ConversationHandler, MessageHandler, filters
+from telegram.ext import ApplicationHandlerStop, Application, CallbackQueryHandler, CommandHandler, ContextTypes, Defaults, ConversationHandler, MessageHandler, filters
 BOT_TOKEN = '8210062279:AAEaZinIXK50BhuR5vYqBaKYaQhP_Lyb7As'
 ADMIN_IDS = {5037478748, 6991875}
 ROLE_LOG_CHAT_ID = -1003782092245
@@ -3634,6 +3634,9 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_TOKEN_UPDATED_8210062279')
+    print('VERSION_ADD_TEXT_HANDLER_PRIORITY_FIX')
+    print('VERSION_ADD_CONFIRM_YES_FIX')
     print('VERSION_PHOTO_ADD_HANDLER_FIX')
     print('VERSION_PHOTO_ROLES_ADD_RESETFRAZ')
     print('VERSION_CLAN_PREMIUM_EMOJI_PACK')
@@ -3766,6 +3769,7 @@ def main():
     app.add_handler(CallbackQueryHandler(buttons))
     app.add_handler(MessageHandler(filters.PHOTO, photo_add_handler))
     app.add_handler(MessageHandler(filters.Document.IMAGE, document_photo_hint_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, photo_add_text_handler), group=-1)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, trigger))
     logger.info('Бот запущен')
     app.run_polling()
@@ -8439,6 +8443,151 @@ async def photo_add_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return
 
 # ===== END FINAL PHOTO_HANDLER_REGISTER_FIX =====
+
+
+# ===== FINAL ADD_CONFIRM_YES_FIX =====
+
+def normalize_yes_no_text(value: str) -> str:
+    value = (value or '').strip().lower()
+
+    # На случай, если Telegram/клавиатура вставила похожие латинские буквы.
+    value = (
+        value.replace('a', 'а')
+             .replace('e', 'е')
+             .replace('o', 'о')
+             .replace('c', 'с')
+             .replace('p', 'р')
+             .replace('x', 'х')
+             .replace('y', 'у')
+    )
+
+    # Оставляем только буквы.
+    value = re.sub(r'[^a-zа-яё]', '', value, flags=re.IGNORECASE)
+    return value
+
+
+async def photo_role_receive_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    data = context.user_data.get('photo_role_add')
+    if not data:
+        return False
+
+    raw = (update.message.text or '').strip()
+    low = raw.lower()
+    normalized = normalize_yes_no_text(raw)
+
+    if normalized in ('отмена', 'cancel'):
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+        return True
+
+    state = data.get('state')
+
+    if state == PHOTO_ADD_STATE_RARITY:
+        rarity = RARITY_INPUT_MAP.get(low) or RARITY_INPUT_MAP.get(normalized)
+        if not rarity:
+            await update.message.reply_text(pe('❌ Такой редкости нет.\n\n' + rarity_help_text()), parse_mode='HTML')
+            return True
+
+        data['rarity'] = rarity
+        data['state'] = PHOTO_ADD_STATE_NAME
+        context.user_data['photo_role_add'] = data
+        await update.message.reply_text(pe('📖 Теперь отправь название/описание роли одним сообщением.'), parse_mode='HTML')
+        return True
+
+    if state == PHOTO_ADD_STATE_NAME:
+        if len(raw) < 1:
+            await update.message.reply_text(pe('❌ Название не может быть пустым.'), parse_mode='HTML')
+            return True
+
+        data['name'] = raw
+        data['description'] = raw
+        data['state'] = PHOTO_ADD_STATE_CONFIRM
+        context.user_data['photo_role_add'] = data
+
+        rarity_label = RARITY_LABELS.get(data['rarity'], data['rarity'])
+        await update.message.reply_photo(
+            photo=data['photo_file_id'],
+            caption=pe(
+                "✅ <b>Подтвердить добавление роли?</b>\n\n"
+                f"Название: <b>{html.escape(data['name'])}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(data['description'])}</b>\n\n"
+                "Напиши <b>да</b> или <b>нет</b>."
+            ),
+            parse_mode='HTML'
+        )
+        return True
+
+    if state == PHOTO_ADD_STATE_CONFIRM:
+        yes_values = ('да', 'yes', 'y', 'lf')   # lf = да на английской раскладке
+        no_values = ('нет', 'no', 'n', 'ytn')   # ytn = нет на английской раскладке
+
+        if normalized not in yes_values and normalized not in no_values:
+            await update.message.reply_text(
+                pe(
+                    '❌ Не понял ответ.\n\n'
+                    'Напиши просто: <b>да</b> или <b>нет</b>.'
+                ),
+                parse_mode='HTML'
+            )
+            return True
+
+        if normalized in no_values:
+            context.user_data.pop('photo_role_add', None)
+            await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+            return True
+
+        ensure_phrase_photo_columns()
+        with db() as conn:
+            conn.execute(
+                "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
+                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name']),
+            )
+            conn.commit()
+
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(
+            pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(data['name'])}</b>\n"
+                f"Редкость: <b>{html.escape(RARITY_LABELS.get(data['rarity'], data['rarity']))}</b>"
+            ),
+            parse_mode='HTML'
+        )
+        return True
+
+    return False
+
+# ===== END FINAL ADD_CONFIRM_YES_FIX =====
+
+
+# ===== FINAL ADD_TEXT_HANDLER_PRIORITY_FIX =====
+
+async def photo_add_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Отдельный приоритетный обработчик текста для /add.
+    Нужен, чтобы ответы 'да' / 'нет' не перехватывал обычный trigger.
+    """
+    if update.message and update.message.text:
+        if await photo_role_receive_text(update, context):
+            return
+
+    return
+
+
+# ===== END FINAL ADD_TEXT_HANDLER_PRIORITY_FIX =====
+
+
+# ===== FINAL ADD_TEXT_HANDLER_STOP_FIX =====
+
+async def photo_add_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message and update.message.text:
+        if await photo_role_receive_text(update, context):
+            raise ApplicationHandlerStop
+
+    return
+
+# ===== END FINAL ADD_TEXT_HANDLER_STOP_FIX =====
 
 if __name__ == '__main__':
     main()
