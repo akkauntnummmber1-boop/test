@@ -3634,6 +3634,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_ADD_CREATED_AT_FIX')
     print('VERSION_ADD_CONVERSATION_HANDLER_FIX')
     print('VERSION_ADD_DESCRIPTION_STEP_FIX')
     print('VERSION_ADD_CANCEL_TEXT_ONLY_LOGS')
@@ -3789,8 +3790,6 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_stats_button, pattern='^admin_stats$'))
     app.add_handler(MessageHandler(filters.Document.ALL, txt_phrases_handler))
     app.add_handler(CallbackQueryHandler(buttons))
-    app.add_handler(MessageHandler(filters.PHOTO, photo_add_handler))
-    app.add_handler(MessageHandler(filters.Document.IMAGE, document_photo_hint_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, trigger))
     logger.info('Бот запущен')
     app.run_polling()
@@ -8333,8 +8332,8 @@ async def photo_role_receive_text(update: Update, context: ContextTypes.DEFAULT_
         ensure_phrase_photo_columns()
         with db() as conn:
             conn.execute(
-                "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
-                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name']),
+                "INSERT INTO phrases (text, rarity, photo_file_id, description, created_at) VALUES (?, ?, ?, ?, ?)",
+                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name'], ts()),
             )
             conn.commit()
 
@@ -8561,8 +8560,8 @@ async def photo_role_receive_text(update: Update, context: ContextTypes.DEFAULT_
         ensure_phrase_photo_columns()
         with db() as conn:
             conn.execute(
-                "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
-                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name']),
+                "INSERT INTO phrases (text, rarity, photo_file_id, description, created_at) VALUES (?, ?, ?, ?, ?)",
+                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name'], ts()),
             )
             conn.commit()
 
@@ -8657,8 +8656,8 @@ async def photo_role_receive_text(update: Update, context: ContextTypes.DEFAULT_
         ensure_phrase_photo_columns()
         with db() as conn:
             conn.execute(
-                "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
-                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name']),
+                "INSERT INTO phrases (text, rarity, photo_file_id, description, created_at) VALUES (?, ?, ?, ?, ?)",
+                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name'], ts()),
             )
             conn.commit()
 
@@ -8801,8 +8800,8 @@ async def photo_role_receive_text(update: Update, context: ContextTypes.DEFAULT_
         ensure_phrase_photo_columns()
         with db() as conn:
             conn.execute(
-                "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
-                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name']),
+                "INSERT INTO phrases (text, rarity, photo_file_id, description, created_at) VALUES (?, ?, ?, ?, ?)",
+                (data['name'], data['rarity'], data['photo_file_id'], data.get('description') or data['name'], ts()),
             )
             conn.commit()
 
@@ -9046,8 +9045,8 @@ async def add_name_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ensure_phrase_photo_columns_final()
     with db() as conn:
         conn.execute(
-            "INSERT INTO phrases (text, rarity, photo_file_id, description) VALUES (?, ?, ?, ?)",
-            (raw, rarity, photo_file_id, raw),
+            "INSERT INTO phrases (text, rarity, photo_file_id, description, created_at) VALUES (?, ?, ?, ?, ?)",
+            (raw, rarity, photo_file_id, raw, ts()),
         )
         conn.commit()
 
@@ -9087,5 +9086,94 @@ async def add_cancel_conv(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===== END_FINAL_ADD_CONVERSATION_HANDLER_FIX =====
 
-if __name__ == '__main__':
+
+# ===== FINAL_ADD_CREATED_AT_AND_CLEAN_HANDLERS =====
+
+def ensure_phrase_photo_columns_final():
+    with db() as conn:
+        phrase_cols = columns(conn, 'phrases')
+        if 'photo_file_id' not in phrase_cols:
+            conn.execute("ALTER TABLE phrases ADD COLUMN photo_file_id TEXT")
+        if 'description' not in phrase_cols:
+            conn.execute("ALTER TABLE phrases ADD COLUMN description TEXT")
+        conn.commit()
+
+
+async def photo_role_receive_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """
+    Старый обработчик /add отключён.
+    Новый /add работает через ConversationHandler ниже.
+    """
+    return False
+
+
+async def photo_role_receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """
+    Старый обработчик фото /add отключён.
+    Новый /add работает через ConversationHandler ниже.
+    """
+    return False
+
+
+async def add_name_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    raw = (update.message.text or '').strip()
+
+    if raw.lower() in ('отменить', 'отмена', 'cancel', '/cancel'):
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Добавление роли отменено.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    if not raw:
+        await update.message.reply_text(
+            pe('❌ Название не может быть пустым.\n\nЧтобы отменить, напиши: <b>Отменить</b>'),
+            parse_mode='HTML'
+        )
+        return ADD_NAME
+
+    data = context.user_data.get('photo_role_add') or {}
+    photo_file_id = data.get('photo_file_id')
+    rarity = data.get('rarity')
+
+    if not photo_file_id or not rarity:
+        context.user_data.pop('photo_role_add', None)
+        await update.message.reply_text(pe('❌ Сессия добавления сломалась. Запусти /add заново.'), parse_mode='HTML')
+        return ConversationHandler.END
+
+    ensure_phrase_photo_columns_final()
+    with db() as conn:
+        conn.execute(
+            "INSERT INTO phrases (text, rarity, photo_file_id, description, created_at) VALUES (?, ?, ?, ?, ?)",
+            (raw, rarity, photo_file_id, raw, ts()),
+        )
+        conn.commit()
+
+    context.user_data.pop('photo_role_add', None)
+    rarity_label = RARITY_LABELS.get(rarity, rarity)
+
+    try:
+        await update.message.reply_photo(
+            photo=photo_file_id,
+            caption=pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(raw)}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(raw)}</b>"
+            ),
+            parse_mode='HTML'
+        )
+    except Exception:
+        await update.message.reply_text(
+            pe(
+                f"✅ <b>Роль добавлена!</b>\n\n"
+                f"Название: <b>{html.escape(raw)}</b>\n"
+                f"Редкость: <b>{html.escape(rarity_label)}</b>\n"
+                f"📖 Описание: <b>{html.escape(raw)}</b>"
+            ),
+            parse_mode='HTML'
+        )
+
+    return ConversationHandler.END
+
+# ===== END_FINAL_ADD_CREATED_AT_AND_CLEAN_HANDLERS =====
+ if __name__ == '__main__':
     main()
