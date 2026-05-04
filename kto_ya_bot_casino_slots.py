@@ -3652,6 +3652,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_CASINO_PHOTOS_DATA_PATH')
     print('VERSION_TOP3_CMD_NAME_FIX')
     print('VERSION_CASINO_RESULT_PHOTOS_ASSETS')
     print('VERSION_UNSUPPORTED_CHARS_TOPDAY_REMOVED')
@@ -9446,7 +9447,7 @@ async def topday_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 from pathlib import Path as _AssetsPath
 
-CASINO_ASSETS_DIR = _AssetsPath("/app/assets/casino")
+CASINO_ASSETS_DIR = _AssetsPath("/app/data/assets/casino")
 
 CASINO_PHOTOS = {
     "football_win": CASINO_ASSETS_DIR / "football_win.jpg",
