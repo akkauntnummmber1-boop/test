@@ -3652,6 +3652,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print('VERSION_TOP3_CMD_NAME_FIX')
     print('VERSION_CASINO_RESULT_PHOTOS_ASSETS')
     print('VERSION_UNSUPPORTED_CHARS_TOPDAY_REMOVED')
     print('VERSION_SEPARATE_TOP3_AND_TOPDAY')
@@ -9627,6 +9628,17 @@ async def safe_reply_game(update: Update, context: ContextTypes.DEFAULT_TYPE, te
 
 
 # ===== END_FINAL_CASINO_RESULT_PHOTOS_ASSETS =====
+
+
+# ===== FINAL_TOP3_CMD_NAME_FIX =====
+
+async def top3_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Совместимость для регистрации app.add_handler(CommandHandler('top3', top3_cmd)).
+    """
+    await top_cmd(update, context)
+
+# ===== END_FINAL_TOP3_CMD_NAME_FIX =====
 
 if __name__ == '__main__':
     main()
